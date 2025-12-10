@@ -1,7 +1,7 @@
 import { createBrowserClient, createServerClient } from '@supabase/ssr'
+import { getSupabaseEnv } from './supabase-config'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const { url: supabaseUrl, key: supabaseAnonKey } = getSupabaseEnv()
 
 // Client-side Supabase client
 export const createClientComponentClient = () =>
@@ -14,7 +14,7 @@ export const createRouteHandlerClient = (request: Request) => {
       getAll() {
         const cookieHeader = request.headers.get('cookie')
         if (!cookieHeader) return []
-        
+
         return cookieHeader.split(';').map(cookie => {
           const [name, ...rest] = cookie.trim().split('=')
           const value = rest.join('=')
