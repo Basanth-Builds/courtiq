@@ -1,6 +1,24 @@
 import Link from "next/link";
+import { redirect } from 'next/navigation'
+import { getUser, getUserProfile, getRoleRedirectPath } from '@/lib/auth'
+import { SimpleThemeToggle } from '@/components/theme-toggle'
 
-export default function Home() {
+export default async function Home() {
+  // Check if user is already authenticated
+  const user = await getUser()
+  
+  if (user) {
+    const profile = await getUserProfile()
+    
+    if (!profile || !profile.role) {
+      redirect('/select-role')
+    }
+
+    const redirectPath = getRoleRedirectPath(profile.role)
+    redirect(redirectPath)
+  }
+
+  // Show landing page for unauthenticated users
   return (
     <div className="min-h-screen bg-white dark:bg-black">
       {/* Hero Section */}
@@ -120,25 +138,30 @@ export default function Home() {
             <div className="text-zinc-600 dark:text-zinc-400">
               <p>&copy; 2025 CourtIQ. All rights reserved.</p>
             </div>
-            <div className="flex gap-6">
-              <Link
-                href="#"
-                className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
-              >
-                Privacy
-              </Link>
-              <Link
-                href="#"
-                className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
-              >
-                Terms
-              </Link>
-              <Link
-                href="#"
-                className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
-              >
-                Contact
-              </Link>
+            <div className="flex items-center gap-6">
+              <div className="flex gap-6">
+                <Link
+                  href="#"
+                  className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                >
+                  Privacy
+                </Link>
+                <Link
+                  href="#"
+                  className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                >
+                  Terms
+                </Link>
+                <Link
+                  href="#"
+                  className="text-zinc-600 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-colors"
+                >
+                  Contact
+                </Link>
+              </div>
+              <div className="border-l border-zinc-300 dark:border-zinc-700 pl-6">
+                <SimpleThemeToggle />
+              </div>
             </div>
           </div>
         </div>
