@@ -1,38 +1,94 @@
-Deployment notes — required Supabase environment variables
+# Deployment Guide
 
-When deploying to Vercel (or another host), make sure the following environment variables are set for the project:
+## Required Environment Variables
 
-- NEXT_PUBLIC_SUPABASE_URL (or SUPABASE_URL)
-- NEXT_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_ANON_KEY)
+When deploying to Vercel, Netlify, or another host, set these environment variables:
 
-Why two names? The code supports either the NEXT_PUBLIC_* names (exposed to the browser) or the non-public names. If you prefer to avoid exposing the anon key to the browser, set SUPABASE_URL and SUPABASE_ANON_KEY and update any client-side code that relies on NEXT_PUBLIC_ variables.
+- `NEXT_PUBLIC_SUPABASE_URL` — Your Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Your Supabase anon/public API key
 
-How to set in Vercel:
-1. Go to your project in Vercel.
-2. Settings → Environment Variables.
-3. Add the variables for the relevant environments (Preview/Production).
-   - Key: NEXT_PUBLIC_SUPABASE_URL
-   - Value: https://your-project-id.supabase.co
-   - Key: NEXT_PUBLIC_SUPABASE_ANON_KEY
-   - Value: <your anon/public API key>
+**Where to find these:**
 
-Optional server-only key:
-- SUPABASE_SERVICE_ROLE_KEY — if you need elevated server permissions, set this as a server-only (never expose to client) variable in Vercel.
+1. Go to your Supabase dashboard
+2. Settings → API
+3. Copy the **Project URL** and **anon** key (not the service_role key)
 
-Local testing:
-Create a `.env.local` in the repo root with these values to run locally:
+## Vercel Deployment
 
+### Steps
+
+1. Go to your Vercel project dashboard
+2. Click **Settings** → **Environment Variables**
+3. Add the two variables for **Production** and **Preview** environments
+4. Ensure values have no trailing spaces or newlines
+5. Redeploy the project
+
+### Optional: Server-Only Keys
+
+If you need elevated server permissions, also set:
+
+- `SUPABASE_SERVICE_ROLE_KEY` — Set as **server-only** (never expose to client)
+
+## Netlify Deployment
+
+The repo includes `netlify.toml` with the correct configuration for Next.js.
+
+### Steps
+
+1. Go to your Netlify site dashboard
+2. Click **Site Settings** → **Build & Deploy** → **Environment**
+3. Add the two variables:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Trigger a new deploy
+
+### Why netlify.toml Matters
+
+- **`publish = ".next"`** — Tells Netlify where Next.js outputs the built files
+- **`command = "npm run build"`** — Runs the build command
+- This prevents the error: "Your publish directory cannot be the same as the base directory"
+
+## Local Development
+
+### Setup
+
+Create `.env.local` in the repo root:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-from-supabase
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-```
 
-Then run:
+### Test Locally
 
-```
+```bash
 npm run dev
-# or build
-npm run build
+# Visit http://localhost:3000
 ```
 
-If you still get the error about missing Supabase credentials during a build on Vercel, double-check that the variables are set for the Production environment (not only Preview) and that there are no trailing spaces or newline characters in the values.
+### Test Build
+
+```bash
+npm run build
+npm start
+```
+
+## Troubleshooting
+
+### "Supabase environment variables are not set"
+
+**Cause:** Missing env vars in deployment environment
+
+**Fix:** Double-check that variables are set in the deployment platform (Vercel/Netlify) for the correct environment (Production, not just Preview)
+
+### "publish directory cannot be the same as base directory" (Netlify only)
+
+**Cause:** Missing or incorrect `netlify.toml`
+
+**Fix:** Ensure `netlify.toml` exists in the repo root with `publish = ".next"`
+
+### Build succeeds locally but fails on deploy
+
+**Cause:** Environment variables not set on the deployment platform
+
+**Fix:** Verify both variables are set and have no extra whitespace
