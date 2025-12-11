@@ -5,9 +5,8 @@ import { createClientComponentClient } from '@/lib/supabase'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
-import { Plus, X, Edit2, Trash2, AlertCircle } from 'lucide-react'
+import { Plus, Edit2, Trash2, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface ManualPlayer {
@@ -153,9 +152,10 @@ export default function ManualPlayerDialog({ tournamentId, onPlayersAdded }: Man
       setPlayers([])
       resetForm()
       onPlayersAdded?.()
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add players'
       console.error('Error adding players:', error)
-      toast.error(error.message || 'Failed to add players')
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -183,7 +183,7 @@ export default function ManualPlayerDialog({ tournamentId, onPlayersAdded }: Man
             <div className="flex gap-3">
               <AlertCircle className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-blue-900 dark:text-blue-100">
-                Players added manually won't need to create accounts. They can participate using the organizer's match setup.
+                Players added manually won&apos;t need to create accounts. They can participate using the organizer&apos;s match setup.
               </div>
             </div>
           </Card>
