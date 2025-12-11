@@ -22,7 +22,7 @@ export const createRouteHandlerClient = (request: Request) => {
           return { name, value }
         })
       },
-      setAll(_cookiesToSet) {
+      setAll() {
         // In route handlers, we can't set cookies directly
         // The cookies will be set by the response
       },
