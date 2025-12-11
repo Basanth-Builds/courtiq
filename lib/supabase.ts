@@ -1,14 +1,15 @@
 import { createBrowserClient, createServerClient } from '@supabase/ssr'
 import { getSupabaseEnv } from './supabase-config'
 
-const { url: supabaseUrl, key: supabaseAnonKey } = getSupabaseEnv()
+// Client-side Supabase client - reads env vars at runtime (browser)
+export const createClientComponentClient = () => {
+  const { url: supabaseUrl, key: supabaseAnonKey } = getSupabaseEnv()
+  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+}
 
-// Client-side Supabase client
-export const createClientComponentClient = () =>
-  createBrowserClient(supabaseUrl, supabaseAnonKey)
-
-// Route handler client
+// Route handler client - reads env vars at build time (server)
 export const createRouteHandlerClient = (request: Request) => {
+  const { url: supabaseUrl, key: supabaseAnonKey } = getSupabaseEnv()
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
@@ -21,7 +22,7 @@ export const createRouteHandlerClient = (request: Request) => {
           return { name, value }
         })
       },
-      setAll(cookiesToSet) {
+      setAll(_cookiesToSet) {
         // In route handlers, we can't set cookies directly
         // The cookies will be set by the response
       },
