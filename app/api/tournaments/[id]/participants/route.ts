@@ -42,10 +42,11 @@ export async function GET(
     }
 
     return NextResponse.json({ participants })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch participants'
     console.error('Error fetching participants:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to fetch participants' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
@@ -102,10 +103,11 @@ export async function DELETE(
     }
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete participant'
     console.error('Error deleting participant:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to delete participant' },
+      { error: errorMessage },
       { status: 500 }
     )
   }
