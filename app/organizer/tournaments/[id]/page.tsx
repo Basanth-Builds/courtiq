@@ -9,6 +9,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import TournamentMatches from '@/components/tournament-matches'
 import AddPlayersDialog from '@/components/add-players-dialog'
+import ManualPlayerDialog from '@/components/manual-player-dialog'
+import TournamentParticipants from '@/components/tournament-participants'
 
 interface TournamentPageProps {
   params: Promise<{ id: string }>
@@ -93,6 +95,7 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
               {isActive ? 'Active' : 'Completed'}
             </Badge>
             <AddPlayersDialog tournamentId={id} />
+            <ManualPlayerDialog tournamentId={id} />
           </div>
         </div>
 
@@ -158,6 +161,9 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
             </CardContent>
           </Card>
         )}
+
+        {/* Manual Participants */}
+        <TournamentParticipants tournamentId={id} />
 
         {/* Matches */}
         <TournamentMatches 
