@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClientComponentClient } from '@/lib/supabase'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,26 @@ export default function TournamentParticipants({ tournamentId, onRefresh }: Tour
   const [deleting, setDeleting] = useState<string | null>(null)
   const supabase = createClientComponentClient()
 
+  const fetchParticipants = useCallback(async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('tournament_participants')
+        .select('*')
+        .eq('tournament_id', tournamentId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setParticipants(data || [])
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load participants'
+      console.error('Error fetching participants:', error)
+      toast.error(errorMessage)
+    } finally {
+      setLoading(false)
+    }
+  }, [tournamentId, supabase])
+
   useEffect(() => {
     fetchParticipants()
 
@@ -50,26 +70,7 @@ export default function TournamentParticipants({ tournamentId, onRefresh }: Tour
     return () => {
       subscription.unsubscribe()
     }
-  }, [tournamentId])
-
-  const fetchParticipants = async () => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('tournament_participants')
-        .select('*')
-        .eq('tournament_id', tournamentId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setParticipants(data || [])
-    } catch (error: any) {
-      console.error('Error fetching participants:', error)
-      toast.error('Failed to load participants')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [tournamentId, supabase, fetchParticipants])
 
   const handleDeleteParticipant = async (participantId: string) => {
     if (!confirm('Are you sure you want to remove this participant?')) {
@@ -88,9 +89,10 @@ export default function TournamentParticipants({ tournamentId, onRefresh }: Tour
       setParticipants(prev => prev.filter(p => p.id !== participantId))
       toast.success('Participant removed')
       onRefresh?.()
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to remove participant'
       console.error('Error deleting participant:', error)
-      toast.error('Failed to remove participant')
+      toast.error(errorMessage)
     } finally {
       setDeleting(null)
     }
