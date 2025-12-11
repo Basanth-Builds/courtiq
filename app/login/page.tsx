@@ -19,6 +19,12 @@ export default function LoginPage() {
   const router = useRouter()
   const supabase = createClientComponentClient()
 
+  // Debug: Log Supabase config to verify env vars are loaded
+  if (typeof window !== 'undefined') {
+    console.log('[LOGIN DEBUG] Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL)
+    console.log('[LOGIN DEBUG] Supabase Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  }
+
   const handlePhoneLogin = async () => {
     if (!phone) {
       toast.error('Please enter your phone number')
