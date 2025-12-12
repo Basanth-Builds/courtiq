@@ -11,6 +11,7 @@ import TournamentMatches from '@/components/tournament-matches'
 import AddPlayersDialog from '@/components/add-players-dialog'
 import ManualPlayerDialog from '@/components/manual-player-dialog'
 import TournamentParticipants from '@/components/tournament-participants'
+import TeamAssignment from '@/components/team-assignment'
 
 interface TournamentPageProps {
   params: Promise<{ id: string }>
@@ -96,6 +97,7 @@ export default async function TournamentPage({ params }: TournamentPageProps) {
             </Badge>
             <AddPlayersDialog tournamentId={id} />
             <ManualPlayerDialog tournamentId={id} />
+            <TeamAssignment tournamentId={id} />
           </div>
         </div>
 
