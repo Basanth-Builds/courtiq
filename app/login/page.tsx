@@ -9,6 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
+// Helper function to extract error message with proper typing
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String(error.message)
+  }
+  return 'An unexpected error occurred'
+}
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [phone, setPhone] = useState('')
@@ -42,8 +53,8 @@ export default function LoginPage() {
       setShowOtpInput(true)
       setOtpType('phone')
       toast.success('OTP sent to your phone!')
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -67,8 +78,8 @@ export default function LoginPage() {
       if (error) throw error
 
       toast.success('Magic link sent to your email! Check your inbox.')
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -85,8 +96,8 @@ export default function LoginPage() {
       })
 
       if (error) throw error
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error))
     } finally {
       setLoading(false)
     }
@@ -110,8 +121,8 @@ export default function LoginPage() {
 
       toast.success('Successfully logged in!')
       router.push('/select-role')
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error))
     } finally {
       setLoading(false)
     }
