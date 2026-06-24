@@ -1,64 +1,65 @@
-@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   :root {
-    /* Court IQ Light Theme */
-    --background: 0 0% 100%;
-    --foreground: 228 20% 22%;
+    /* Court IQ dark theme as default */
+    --background: 231 17% 14%;       /* #1E2030 slate-dark */
+    --foreground: 0 0% 95%;
+
+    --card: 231 14% 18%;             /* #2D3142 slate-deep */
+    --card-foreground: 0 0% 95%;
+
+    --border: 231 14% 25%;
+    --input: 231 14% 22%;
+    --ring: 80 65% 52%;              /* court-green */
+
+    --primary: 80 65% 52%;           /* #A8D634 */
+    --primary-foreground: 231 17% 10%;
+
+    --secondary: 231 14% 25%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 231 14% 22%;
+    --muted-foreground: 0 0% 55%;
+
+    --accent: 80 65% 52%;
+    --accent-foreground: 231 17% 10%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --radius: 0.5rem;
+  }
+
+  /* Optional: light mode override */
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 231 17% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 228 20% 22%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 228 20% 22%;
-    --primary: 80 65% 52%;       /* brand green */
-    --primary-foreground: 228 20% 10%;
-    --secondary: 228 20% 22%;    /* brand slate */
-    --secondary-foreground: 0 0% 98%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 80 65% 52%;
-    --accent-foreground: 228 20% 10%;
-    --destructive: 0 84% 60%;
+    --card-foreground: 231 17% 14%;
+    --border: 231 14% 88%;
+    --input: 231 14% 90%;
+    --primary: 80 65% 40%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 231 14% 92%;
+    --secondary-foreground: 231 17% 14%;
+    --muted: 231 14% 94%;
+    --muted-foreground: 231 14% 45%;
+    --accent: 80 65% 40%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 80 65% 52%;
-    --radius: 0.75rem;
   }
+}
 
-  .dark {
-    /* Court IQ Dark Theme */
-    --background: 228 20% 12%;
-    --foreground: 0 0% 98%;
-    --card: 228 20% 16%;
-    --card-foreground: 0 0% 98%;
-    --popover: 228 20% 16%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 80 65% 52%;
-    --primary-foreground: 228 20% 10%;
-    --secondary: 228 20% 22%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 228 20% 20%;
-    --muted-foreground: 220 9% 65%;
-    --accent: 80 65% 52%;
-    --accent-foreground: 228 20% 10%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 228 20% 26%;
-    --input: 228 20% 26%;
-    --ring: 80 65% 52%;
-  }
-
+@layer base {
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
-
-  /* Sporty scrollbar */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { @apply bg-muted; }
-  ::-webkit-scrollbar-thumb { @apply bg-brand-green rounded-full; }
 }

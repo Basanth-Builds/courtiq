@@ -10,15 +10,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Court IQ Brand Tokens — from logo
-        brand: {
-          green: '#A8D634',
-          'green-light': '#C4E85A',
-          'green-dark': '#86AA28',
-          slate: '#2D3142',
-          'slate-light': '#3D4252',
-          'slate-dark': '#1E2030',
-        },
+        // Court IQ Brand Tokens
+        'court-green': '#A8D634',
+        'court-green-light': '#C4E85A',
+        'court-green-dark': '#86AA28',
+        'slate-deep': '#2D3142',
+        'slate-mid': '#3D4252',
+        'slate-dark': '#1E2030',
         // shadcn/ui CSS variable tokens
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -52,7 +50,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Cal Sans', 'Inter', 'sans-serif'],
+        display: ['Barlow Condensed', 'Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       borderRadius: {
@@ -71,16 +69,12 @@ const config: Config = {
         },
         'score-pop': {
           '0%': { transform: 'scale(1)' },
-          '50%': { transform: 'scale(1.15)', color: '#A8D634' },
+          '50%': { transform: 'scale(1.15)' },
           '100%': { transform: 'scale(1)' },
         },
         'fade-in-up': {
           '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        pulse: {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0.5' },
         },
       },
       animation: {
@@ -88,11 +82,10 @@ const config: Config = {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'score-pop': 'score-pop 0.3s ease-in-out',
         'fade-in-up': 'fade-in-up 0.4s ease-out',
-        pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  // No plugins — tailwindcss-animate not installed; animations defined above in keyframes
 }
 
 export default config
