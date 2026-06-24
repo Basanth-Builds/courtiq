@@ -6,33 +6,29 @@ node_modules
 # Build outputs
 .next
 dist
-build
 out
-
-# Turbo
-.turbo
-
-# Environment
-.env
-.env.local
-.env.production
-.env.staging
-
-# Prisma
-prisma/generated
+build
 
 # Cloudflare
 .wrangler
 
-# OS
-.DS_Store
-Thumbs.db
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Turbo
+.turbo
 
 # IDE
 .vscode
 .idea
 *.swp
 *.swo
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log

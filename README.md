@@ -1,35 +1,43 @@
-# Court IQ 🎾
+# Court IQ 🏓
 
 > **Score it live. Run it smart.**
 
-Court IQ is a production-grade tournament management platform for pickleball — automating scoring, seeding, playoff brackets, and DUPR submission end-to-end.
+Court IQ is a production-grade tournament management platform built for pickleball — automating score entry, pool seeding, playoff draws, and DUPR submission from a single smart interface.
 
-## Tech Stack
+---
 
-- **Framework**: Next.js 15 (App Router)
-- **Monorepo**: Turborepo + pnpm workspaces
-- **UI**: shadcn/ui + Tailwind CSS v4
-- **Auth**: Phone OTP (Twilio)
-- **Database**: PostgreSQL + Prisma ORM
-- **Hosting**: Cloudflare Pages + Workers
-- **Real-time**: WebSockets via Cloudflare Durable Objects
-- **Jobs**: Cloudflare Workers (DUPR CSV export, notifications)
+## Stack
+
+| Layer | Technology |
+|-------|------------|
+| Framework | Next.js 15 (App Router) |
+| Hosting | Cloudflare Pages + Workers |
+| Auth | Phone OTP via Twilio Verify |
+| UI | shadcn/ui + Tailwind CSS v4 |
+| Database | PostgreSQL + Prisma ORM |
+| Monorepo | Turborepo + pnpm |
+| Jobs | Cloudflare Workers |
+| Real-time | WebSockets (Socket.IO) |
+
+---
 
 ## Monorepo Structure
 
 ```
 court-iq/
 ├── apps/
-│   ├── web/          # Next.js web app
-│   └── worker/       # Cloudflare background worker
+│   ├── web/          # Next.js 15 app (main product)
+│   └── worker/       # Cloudflare Worker (background jobs)
 ├── packages/
-│   ├── ui/           # Shared design system (shadcn/ui)
-│   ├── core/         # Tournament engine & business logic
-│   ├── db/           # Prisma schema & repositories
-│   ├── auth/         # Phone OTP & RBAC
-│   ├── config/       # Shared lint/ts/tailwind configs
-│   └── types/        # Shared TypeScript types
+│   ├── ui/           # Shared shadcn/ui design system
+│   ├── core/         # Tournament engine + business logic
+│   ├── db/           # Prisma schema + data access
+│   ├── auth/         # Phone OTP + RBAC
+│   ├── types/        # Shared TypeScript types
+│   └── config/       # Shared ESLint, TS, Tailwind configs
 ```
+
+---
 
 ## Getting Started
 
@@ -37,25 +45,45 @@ court-iq/
 # Install dependencies
 pnpm install
 
-# Copy environment variables
+# Copy env file
 cp .env.example .env
 
-# Run database migrations
+# Generate Prisma client
+pnpm db:generate
+
+# Run DB migrations
 pnpm db:migrate
 
 # Seed database
 pnpm db:seed
 
-# Start development
+# Start all apps in dev mode
 pnpm dev
 ```
 
+---
+
 ## Branches
 
-- `main` — Production
-- `staging` — Demo & testing
-- `dev` — Active development
+| Branch | Purpose |
+|--------|---------|
+| `main` | Production |
+| `staging` | Demo & QA testing |
+| `dev` | Active development |
+
+---
+
+## Roles
+
+| Role | Access |
+|------|--------|
+| `admin` | Full tournament management |
+| `referee` | Final score confirmation + DUPR |
+| `umpire` | Court score entry |
+| `spectator` | Live view only (public) |
+
+---
 
 ## License
 
-Private & Proprietary — Court IQ © 2026
+Private — Court IQ © 2026
