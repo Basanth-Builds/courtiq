@@ -1,3 +1,8 @@
+// ============================================================
+// Court IQ — Prisma Schema
+// Full data model for tournament management + DUPR integration
+// ============================================================
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,7 +12,43 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Enums ───────────────────────────────────────────────────────────────────
+// ============================================================
+// USERS & AUTH
+// ============================================================
+
+model User {
+  id          String   @id @default(cuid())
+  phone       String   @unique
+  name        String?
+  role        Role     @default(SPECTATOR)
+  duprId      String?  @unique
+  duprRating  Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relationships
+  umpiredMatches    Match[]   @relation("UmpireMatches")
+  refereedMatches   Match[]   @relation("RefereeMatches")
+  teamMemberships   TeamMember[]
+  tournaments       Tournament[] @relation("OrganizerTournaments")
+  auditLogs         AuditLog[]
+  otpSessions       OtpSession[]
+
+  @@map("users")
+}
+
+model OtpSession {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  verified  Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+
+  @@map("otp_sessions")
+}
 
 enum Role {
   ADMIN
@@ -16,29 +57,173 @@ enum Role {
   SPECTATOR
 }
 
+// ============================================================
+// TOURNAMENTS
+// ============================================================
+
+model Tournament {
+  id                String             @id @default(cuid())
+  name              String
+  slug              String             @unique
+  status            TournamentStatus   @default(DRAFT)
+  format            MatchFormat
+  venue             String
+  city              String?
+  date              DateTime
+  registrationDeadline DateTime?
+  poolCount         Int                @default(2)
+  advancersPerPool  Int                @default(2)
+  bracketSize       Int                @default(8)
+  description       String?
+  bannerUrl         String?
+  organizerId       String
+  organizer         User               @relation("OrganizerTournaments", fields: [organizerId], references: [id])
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  pools             Pool[]
+  matches           Match[]
+  teams             Team[]
+  duprExports       DuprExport[]
+  auditLogs         AuditLog[]
+
+  @@map("tournaments")
+}
+
 enum TournamentStatus {
   DRAFT
   REGISTRATION
-  POOL_PLAY
-  PLAYOFFS
+  ACTIVE
   COMPLETED
+  CANCELLED
 }
 
-enum TournamentFormat {
+enum MatchFormat {
   SINGLES
   DOUBLES
   MIXED_DOUBLES
 }
 
+// ============================================================
+// TEAMS & PLAYERS
+// ============================================================
+
+model Team {
+  id           String       @id @default(cuid())
+  name         String
+  tournamentId String
+  tournament   Tournament   @relation(fields: [tournamentId], references: [id])
+  duprRating   Float?       // avg of player ratings for seeding
+  createdAt    DateTime     @default(now())
+
+  members      TeamMember[]
+  matchesAsTeam1 Match[]    @relation("Team1Matches")
+  matchesAsTeam2 Match[]    @relation("Team2Matches")
+  poolTeams    PoolTeam[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id       String @id @default(cuid())
+  teamId   String
+  userId   String
+  team     Team   @relation(fields: [teamId], references: [id])
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@unique([teamId, userId])
+  @@map("team_members")
+}
+
+// ============================================================
+// POOLS
+// ============================================================
+
+model Pool {
+  id           String     @id @default(cuid())
+  name         String     // "Pool A", "Pool B"
+  tournamentId String
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  createdAt    DateTime   @default(now())
+
+  teams        PoolTeam[]
+  matches      Match[]
+
+  @@map("pools")
+}
+
+model PoolTeam {
+  id     String @id @default(cuid())
+  poolId String
+  teamId String
+  seed   Int    // seeding position within pool
+  pool   Pool   @relation(fields: [poolId], references: [id])
+  team   Team   @relation(fields: [teamId], references: [id])
+
+  @@unique([poolId, teamId])
+  @@map("pool_teams")
+}
+
+// ============================================================
+// MATCHES
+// ============================================================
+
+model Match {
+  id             String         @id @default(cuid())
+  tournamentId   String
+  tournament     Tournament     @relation(fields: [tournamentId], references: [id])
+  poolId         String?
+  pool           Pool?          @relation(fields: [poolId], references: [id])
+  stage          MatchStage
+  team1Id        String
+  team1          Team           @relation("Team1Matches", fields: [team1Id], references: [id])
+  team2Id        String
+  team2          Team           @relation("Team2Matches", fields: [team2Id], references: [id])
+  courtNumber    Int?
+  scheduledAt    DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  status         MatchStatus    @default(SCHEDULED)
+  approvalStatus ApprovalStatus @default(PENDING_UMPIRE)
+  umpireId       String?
+  umpire         User?          @relation("UmpireMatches", fields: [umpireId], references: [id])
+  refereeId      String?
+  referee        User?          @relation("RefereeMatches", fields: [refereeId], references: [id])
+  duprEligible   Boolean?
+  duprSubmitted  Boolean        @default(false)
+  duprExclusionReason String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  scores         MatchScore[]
+  approvalEvents ApprovalEvent[]
+  auditLogs      AuditLog[]
+
+  @@map("matches")
+}
+
+model MatchScore {
+  id           String   @id @default(cuid())
+  matchId      String
+  match        Match    @relation(fields: [matchId], references: [id])
+  team1Points  Int
+  team2Points  Int
+  isComplete   Boolean  @default(false)
+  recordedById String
+  recordedAt   DateTime @default(now())
+
+  @@map("match_scores")
+}
+
 enum MatchStatus {
   SCHEDULED
   IN_PROGRESS
-  PROVISIONAL
+  PENDING_REVIEW
   CONFIRMED
   DISPUTED
 }
 
-enum MatchPhase {
+enum MatchStage {
   POOL
   QUARTERFINAL
   SEMIFINAL
@@ -46,246 +231,78 @@ enum MatchPhase {
   THIRD_PLACE
 }
 
-enum ApprovalAction {
-  CONFIRMED
-  DISPUTED
+enum ApprovalStatus {
+  PENDING_UMPIRE
+  PENDING_REFEREE
+  APPROVED
+  REJECTED
 }
 
-enum CourtStatus {
-  AVAILABLE
-  IN_USE
-  MAINTENANCE
-}
-
-enum DUPRSubmissionStatus {
-  PENDING
-  SUBMITTED
-  FAILED
-  EXCLUDED
-}
-
-// ─── User ────────────────────────────────────────────────────────────────────
-
-model User {
-  id          String   @id @default(cuid())
-  phone       String   @unique
-  name        String
-  role        Role     @default(SPECTATOR)
-  duprId      String?
-  duprRating  Float?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  otpCodes          OTPCode[]
-  tournamentsCreated Tournament[]      @relation("TournamentCreator")
-  teamPlayers        TeamPlayer[]
-  umpireMatches      Match[]           @relation("MatchUmpire")
-  refereeMatches     Match[]           @relation("MatchReferee")
-  approvalEvents     ApprovalEvent[]
-  auditLogs          AuditLog[]
-
-  @@index([phone])
-  @@map("users")
-}
-
-// ─── OTP ─────────────────────────────────────────────────────────────────────
-
-model OTPCode {
-  id        String   @id @default(cuid())
-  userId    String
-  code      String
-  expiresAt DateTime
-  used      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("otp_codes")
-}
-
-// ─── Tournament ───────────────────────────────────────────────────────────────
-
-model Tournament {
-  id          String            @id @default(cuid())
-  name        String
-  slug        String            @unique
-  status      TournamentStatus  @default(DRAFT)
-  format      TournamentFormat  @default(DOUBLES)
-  location    String
-  startDate   DateTime
-  endDate     DateTime
-  createdById String
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-
-  createdBy  User     @relation("TournamentCreator", fields: [createdById], references: [id])
-  pools      Pool[]
-  courts     Court[]
-  matches    Match[]
-
-  @@index([slug])
-  @@index([status])
-  @@map("tournaments")
-}
-
-// ─── Pool ─────────────────────────────────────────────────────────────────────
-
-model Pool {
-  id           String  @id @default(cuid())
-  name         String  // "Pool A", "Pool B"
-  tournamentId String
-
-  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  teams      Team[]
-  matches    Match[]
-
-  @@index([tournamentId])
-  @@map("pools")
-}
-
-// ─── Team ─────────────────────────────────────────────────────────────────────
-
-model Team {
-  id         String  @id @default(cuid())
-  name       String
-  seed       Int     @default(0)
-  duprRating Float   @default(0)
-  poolId     String?
-
-  pool        Pool?       @relation(fields: [poolId], references: [id])
-  players     TeamPlayer[]
-  matchesAsA  Match[]     @relation("MatchTeamA")
-  matchesAsB  Match[]     @relation("MatchTeamB")
-
-  @@index([poolId])
-  @@map("teams")
-}
-
-model TeamPlayer {
-  id     String @id @default(cuid())
-  teamId String
-  userId String
-
-  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([teamId, userId])
-  @@map("team_players")
-}
-
-// ─── Court ────────────────────────────────────────────────────────────────────
-
-model Court {
-  id           String      @id @default(cuid())
-  name         String
-  status       CourtStatus @default(AVAILABLE)
-  tournamentId String
-
-  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  matches    Match[]
-
-  @@index([tournamentId])
-  @@map("courts")
-}
-
-// ─── Match ────────────────────────────────────────────────────────────────────
-
-model Match {
-  id           String      @id @default(cuid())
-  tournamentId String
-  poolId       String?
-  phase        MatchPhase  @default(POOL)
-  status       MatchStatus @default(SCHEDULED)
-  courtId      String
-  teamAId      String
-  teamBId      String
-  umpireId     String?
-  refereeId    String?
-
-  teamAGame1   Int?  @default(0)
-  teamBGame1   Int?  @default(0)
-  teamAGame2   Int?  @default(0)
-  teamBGame2   Int?  @default(0)
-  teamAGame3   Int?  @default(0)
-  teamBGame3   Int?  @default(0)
-  winnerId     String?
-
-  umpireConfirmedAt  DateTime?
-  refereeConfirmedAt DateTime?
-  scheduledAt        DateTime
-  completedAt        DateTime?
-
-  duprSubmission DUPRSubmission?
-
-  tournament    Tournament      @relation(fields: [tournamentId], references: [id])
-  pool          Pool?           @relation(fields: [poolId], references: [id])
-  court         Court           @relation(fields: [courtId], references: [id])
-  teamA         Team            @relation("MatchTeamA", fields: [teamAId], references: [id])
-  teamB         Team            @relation("MatchTeamB", fields: [teamBId], references: [id])
-  umpire        User?           @relation("MatchUmpire", fields: [umpireId], references: [id])
-  referee       User?           @relation("MatchReferee", fields: [refereeId], references: [id])
-  approvalEvents ApprovalEvent[]
-  auditLogs     AuditLog[]
-
-  @@index([tournamentId])
-  @@index([status])
-  @@index([courtId])
-  @@map("matches")
-}
-
-// ─── Approval Event ───────────────────────────────────────────────────────────
+// ============================================================
+// APPROVALS & AUDIT
+// ============================================================
 
 model ApprovalEvent {
-  id        String         @id @default(cuid())
+  id        String          @id @default(cuid())
   matchId   String
-  userId    String
-  role      Role
+  match     Match           @relation(fields: [matchId], references: [id])
+  actorId   String
+  actorRole Role
   action    ApprovalAction
-  notes     String?
-  createdAt DateTime       @default(now())
+  note      String?
+  createdAt DateTime        @default(now())
 
-  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
-  user  User  @relation(fields: [userId], references: [id])
-
-  @@index([matchId])
   @@map("approval_events")
 }
 
-// ─── DUPR Submission ─────────────────────────────────────────────────────────
-
-model DUPRSubmission {
-  id          String              @id @default(cuid())
-  matchId     String              @unique
-  status      DUPRSubmissionStatus @default(PENDING)
-  csvPayload  Json
-  submittedAt DateTime?
-  error       String?
-  retryCount  Int                 @default(0)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-
-  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
-
-  @@index([status])
-  @@map("dupr_submissions")
+enum ApprovalAction {
+  UMPIRE_SUBMITTED
+  REFEREE_APPROVED
+  REFEREE_REJECTED
+  OVERRIDE
 }
 
-// ─── Audit Log ────────────────────────────────────────────────────────────────
-
 model AuditLog {
-  id        String   @id @default(cuid())
-  matchId   String?
-  userId    String
-  action    String
-  payload   Json?
-  createdAt DateTime @default(now())
+  id           String     @id @default(cuid())
+  entityType   String     // "match", "tournament", "user"
+  entityId     String
+  action       String
+  actorId      String?
+  actor        User?      @relation(fields: [actorId], references: [id])
+  tournamentId String?
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id])
+  matchId      String?
+  match        Match?     @relation(fields: [matchId], references: [id])
+  before       Json?
+  after        Json?
+  createdAt    DateTime   @default(now())
 
-  match Match? @relation(fields: [matchId], references: [id])
-  user  User   @relation(fields: [userId], references: [id])
-
-  @@index([matchId])
-  @@index([userId])
   @@map("audit_logs")
+}
+
+// ============================================================
+// DUPR EXPORTS
+// ============================================================
+
+model DuprExport {
+  id           String       @id @default(cuid())
+  tournamentId String
+  tournament   Tournament   @relation(fields: [tournamentId], references: [id])
+  csvContent   String       @db.Text
+  matchCount   Int
+  excludedCount Int
+  status       ExportStatus @default(PENDING)
+  exportedById String
+  exportedAt   DateTime     @default(now())
+  submittedAt  DateTime?
+  notes        String?
+
+  @@map("dupr_exports")
+}
+
+enum ExportStatus {
+  PENDING
+  SUBMITTED
+  FAILED
+  CANCELLED
 }
