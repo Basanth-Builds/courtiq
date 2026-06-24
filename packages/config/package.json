@@ -1,10 +1,11 @@
 {
   "name": "@court-iq/config",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "exports": {
-    "./eslint": "./eslint/index.js",
-    "./typescript": "./typescript/index.json",
+    "./eslint": "./eslint.js",
+    "./typescript/base": "./typescript/base.json",
+    "./typescript/nextjs": "./typescript/nextjs.json",
     "./tailwind": "./tailwind/index.js"
   }
 }

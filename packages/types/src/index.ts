@@ -1,132 +1,152 @@
-// ─── Roles ───────────────────────────────────────────────────────────────────
+// ==============================
+// Court IQ — Shared Types
+// ==============================
+
 export type Role = 'admin' | 'referee' | 'umpire' | 'spectator'
 
-// ─── User ────────────────────────────────────────────────────────────────────
+export type TournamentStatus = 'draft' | 'registration' | 'pools' | 'playoffs' | 'completed'
+
+export type MatchStatus =
+  | 'scheduled'
+  | 'in_progress'
+  | 'pending_umpire'
+  | 'pending_referee'
+  | 'confirmed'
+  | 'dupr_submitted'
+  | 'dupr_excluded'
+
+export type ApprovalRole = 'umpire' | 'referee'
+
+export type DuprSubmissionStatus = 'pending' | 'submitted' | 'failed' | 'excluded'
+
 export interface User {
   id: string
   phone: string
-  name: string
+  name?: string
   role: Role
   duprId?: string
-  duprRating?: number
   createdAt: Date
 }
-
-// ─── Tournament ───────────────────────────────────────────────────────────────
-export type TournamentStatus = 'draft' | 'registration' | 'pool_play' | 'playoffs' | 'completed'
-export type TournamentFormat = 'singles' | 'doubles' | 'mixed_doubles'
 
 export interface Tournament {
   id: string
   name: string
-  slug: string
+  description?: string
   status: TournamentStatus
-  format: TournamentFormat
   startDate: Date
-  endDate: Date
-  location: string
-  pools: Pool[]
-  createdBy: string
+  endDate?: Date
+  location?: string
+  adminId: string
+  maxParticipants?: number
+  createdAt: Date
+  updatedAt: Date
 }
 
-// ─── Pool ────────────────────────────────────────────────────────────────────
+export interface Division {
+  id: string
+  tournamentId: string
+  name: string
+  format: 'singles' | 'doubles' | 'mixed_doubles'
+  ratingMin?: number
+  ratingMax?: number
+}
+
 export interface Pool {
   id: string
-  name: string          // e.g. "Pool A"
-  tournamentId: string
-  teams: Team[]
-  matches: Match[]
-  standings: Standing[]
-}
-
-// ─── Team / Player ───────────────────────────────────────────────────────────
-export interface Team {
-  id: string
+  divisionId: string
   name: string
-  players: User[]
-  seed: number
-  duprRating: number
-  poolId?: string
+  order: number
 }
 
-// ─── Match ───────────────────────────────────────────────────────────────────
-export type MatchStatus = 'scheduled' | 'in_progress' | 'provisional' | 'confirmed' | 'disputed'
-export type MatchPhase = 'pool' | 'quarterfinal' | 'semifinal' | 'final' | 'third_place'
+export interface Participant {
+  id: string
+  tournamentId: string
+  userId: string
+  partnerId?: string
+  duprRating?: number
+  seed?: number
+  poolId?: string
+  user?: User
+  partner?: User
+}
 
 export interface Match {
   id: string
   tournamentId: string
   poolId?: string
-  phase: MatchPhase
+  round?: string
+  courtId?: string
   status: MatchStatus
-  courtId: string
-  teamA: Team
-  teamB: Team
+  team1Id: string
+  team2Id: string
   score?: MatchScore
   umpireId?: string
   refereeId?: string
-  umpireConfirmedAt?: Date
-  refereeConfirmedAt?: Date
-  duprSubmitted?: boolean
-  duprSubmittedAt?: Date
-  scheduledAt: Date
+  scheduledAt?: Date
+  startedAt?: Date
   completedAt?: Date
+  duprStatus: DuprSubmissionStatus
+  duprEligible: boolean
+  duprExcludeReason?: string
 }
 
-// ─── Score ───────────────────────────────────────────────────────────────────
 export interface MatchScore {
-  teamAPoints: number
-  teamBPoints: number
-  games: GameScore[]
-  winner?: 'teamA' | 'teamB'
+  id: string
+  matchId: string
+  team1Score: number
+  team2Score: number
+  winnerId?: string
+  confirmedByUmpire: boolean
+  confirmedByReferee: boolean
+  confirmedAt?: Date
 }
 
-export interface GameScore {
-  gameNumber: number
-  teamAPoints: number
-  teamBPoints: number
-}
-
-// ─── Standing ────────────────────────────────────────────────────────────────
-export interface Standing {
-  rank: number
-  team: Team
-  wins: number
-  losses: number
-  pointsFor: number
-  pointsAgainst: number
-  pointDiff: number
-  gamesPlayed: number
-}
-
-// ─── Court ───────────────────────────────────────────────────────────────────
 export interface Court {
   id: string
-  name: string          // e.g. "Court 1"
-  currentMatchId?: string
-  status: 'available' | 'in_use' | 'maintenance'
+  tournamentId: string
+  name: string
+  number: number
+  isActive: boolean
 }
 
-// ─── Approval ────────────────────────────────────────────────────────────────
 export interface ApprovalEvent {
   id: string
   matchId: string
+  role: ApprovalRole
   userId: string
-  role: 'umpire' | 'referee'
-  action: 'confirmed' | 'disputed'
+  confirmedAt: Date
   notes?: string
+}
+
+export interface DuprProfile {
+  id: string
+  userId: string
+  duprId: string
+  duprRating?: number
+  lastSyncedAt?: Date
+}
+
+export interface AuditLog {
+  id: string
+  entityType: string
+  entityId: string
+  action: string
+  userId: string
+  payload?: Record<string, unknown>
   createdAt: Date
 }
 
-// ─── DUPR ────────────────────────────────────────────────────────────────────
-export interface DUPRRow {
-  Player1_DUPR_ID: string
-  Player2_DUPR_ID: string
-  Opponent1_DUPR_ID: string
-  Opponent2_DUPR_ID: string
-  Player1_Score: number
-  Opponent1_Score: number
-  Match_Date: string
-  Location: string
-  Format: 'singles' | 'doubles'
+// API types
+export interface ApiResponse<T> {
+  data?: T
+  error?: string
+  message?: string
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+  page: number
+  perPage: number
+  totalPages: number
 }
