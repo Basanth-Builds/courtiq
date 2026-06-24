@@ -2,18 +2,11 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  transpilePackages: [
-    '@court-iq/ui',
-    '@court-iq/core',
-    '@court-iq/db',
-    '@court-iq/auth',
-    '@court-iq/types',
-  ],
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
-  },
-  experimental: {
-    typedRoutes: true,
   },
 }
 

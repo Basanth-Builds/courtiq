@@ -1,15 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "jsx": "preserve",
-    "incremental": true,
-    "plugins": [{ "name": "next" }],
+    "plugins": [{"name": "next"}],
     "paths": {
       "@/*": ["./src/*"],
       "@court-iq/ui": ["../../packages/ui/src/index.ts"],
-      "@court-iq/ui/*": ["../../packages/ui/src/*"],
       "@court-iq/core": ["../../packages/core/src/index.ts"],
-      "@court-iq/core/*": ["../../packages/core/src/*"],
       "@court-iq/db": ["../../packages/db/src/index.ts"],
       "@court-iq/auth": ["../../packages/auth/src/index.ts"],
       "@court-iq/types": ["../../packages/types/src/index.ts"]

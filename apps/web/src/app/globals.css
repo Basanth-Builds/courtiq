@@ -1,0 +1,138 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Court IQ Brand Colors */
+  --color-brand-green: #a8d634;
+  --color-brand-green-light: #c4e85a;
+  --color-brand-green-dark: #8ab82a;
+  --color-brand-slate: #2d3142;
+  --color-brand-slate-light: #3d4257;
+  --color-brand-slate-dark: #1a1f2e;
+
+  /* Background system */
+  --color-background: #0f1219;
+  --color-background-secondary: #1a1f2e;
+  --color-background-tertiary: #242938;
+
+  /* Surface */
+  --color-surface: #1a1f2e;
+  --color-surface-hover: #242938;
+  --color-surface-border: #2a3144;
+
+  /* Foreground */
+  --color-foreground: #f0f4f8;
+  --color-foreground-muted: #8b95a8;
+  --color-foreground-subtle: #5a6478;
+
+  /* Semantic */
+  --color-primary: #a8d634;
+  --color-primary-foreground: #0f1219;
+  --color-secondary: #2d3142;
+  --color-secondary-foreground: #f0f4f8;
+  --color-accent: #a8d634;
+  --color-accent-foreground: #0f1219;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-info: #3b82f6;
+
+  /* Typography */
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-space-grotesk);
+
+  /* Radius */
+  --radius: 0.75rem;
+  --radius-sm: 0.5rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  /* Shadows */
+  --shadow-glow: 0 0 20px rgba(168, 214, 52, 0.15);
+  --shadow-glow-strong: 0 0 40px rgba(168, 214, 52, 0.3);
+}
+
+/* Base resets */
+* {
+  border-color: var(--color-surface-border);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-background-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-green);
+}
+
+/* Selection */
+::selection {
+  background: rgba(168, 214, 52, 0.2);
+  color: var(--color-brand-green-light);
+}
+
+/* Animations */
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 214, 52, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(168, 214, 52, 0); }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes score-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); color: var(--color-brand-green); }
+  100% { transform: scale(1); }
+}
+
+.animate-score-pop {
+  animation: score-pop 0.3s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+.animate-pulse-green {
+  animation: pulse-green 2s infinite;
+}
+
+/* Glass card effect */
+.glass {
+  background: rgba(26, 31, 46, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(42, 49, 68, 0.8);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #a8d634 0%, #c4e85a 50%, #8ab82a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Court pattern background */
+.court-pattern {
+  background-image:
+    linear-gradient(rgba(168, 214, 52, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168, 214, 52, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}

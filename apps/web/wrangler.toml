@@ -1,0 +1,14 @@
+name = "court-iq-web"
+main = ".open-next/worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[site]
+bucket = ".open-next/assets"
+
+[[kv_namespaces]]
+binding = "NEXT_CACHE_WORKERS_KV"
+id = "YOUR_KV_NAMESPACE_ID"
+
+[vars]
+NEXT_PUBLIC_APP_NAME = "Court IQ"
