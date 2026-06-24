@@ -4,8 +4,6 @@
 
 Court IQ is a production-grade tournament management platform built for pickleball — automating score entry, pool seeding, playoff draws, and DUPR submission from a single smart interface.
 
----
-
 ## Stack
 
 | Layer | Technology |
@@ -14,30 +12,22 @@ Court IQ is a production-grade tournament management platform built for pickleba
 | Hosting | Cloudflare Pages + Workers |
 | Auth | Phone OTP via Twilio Verify |
 | UI | shadcn/ui + Tailwind CSS v4 |
-| Database | PostgreSQL + Prisma ORM |
+| Database | PostgreSQL + Prisma |
 | Monorepo | Turborepo + pnpm |
 | Jobs | Cloudflare Workers |
-| Real-time | WebSockets (Socket.IO) |
 
----
+## Apps & Packages
 
-## Monorepo Structure
-
-```
-court-iq/
-├── apps/
-│   ├── web/          # Next.js 15 app (main product)
-│   └── worker/       # Cloudflare Worker (background jobs)
-├── packages/
-│   ├── ui/           # Shared shadcn/ui design system
-│   ├── core/         # Tournament engine + business logic
-│   ├── db/           # Prisma schema + data access
-│   ├── auth/         # Phone OTP + RBAC
-│   ├── types/        # Shared TypeScript types
-│   └── config/       # Shared ESLint, TS, Tailwind configs
-```
-
----
+| Package | Description |
+|---------|-------------|
+| `apps/web` | Main Next.js web application |
+| `apps/worker` | Cloudflare Worker for background jobs |
+| `packages/ui` | Shared shadcn/ui component system |
+| `packages/core` | Tournament engine, seeding, bracket logic |
+| `packages/db` | Prisma schema + data access layer |
+| `packages/auth` | Phone OTP + RBAC |
+| `packages/types` | Shared TypeScript types |
+| `packages/config` | Shared ESLint, TS, Tailwind configs |
 
 ## Getting Started
 
@@ -51,38 +41,23 @@ cp .env.example .env
 # Generate Prisma client
 pnpm db:generate
 
-# Run DB migrations
+# Run migrations
 pnpm db:migrate
 
-# Seed database
+# Seed sample data
 pnpm db:seed
 
 # Start all apps in dev mode
 pnpm dev
 ```
 
----
-
 ## Branches
 
 | Branch | Purpose |
-|--------|---------|
+|--------|----------|
 | `main` | Production |
-| `staging` | Demo & QA testing |
+| `staging` | Demo & testing |
 | `dev` | Active development |
-
----
-
-## Roles
-
-| Role | Access |
-|------|--------|
-| `admin` | Full tournament management |
-| `referee` | Final score confirmation + DUPR |
-| `umpire` | Court score entry |
-| `spectator` | Live view only (public) |
-
----
 
 ## License
 
