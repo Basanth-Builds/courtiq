@@ -1,16 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "plugins": [{"name": "next"}],
+    "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./src/*"],
-      "@court-iq/ui": ["../../packages/ui/src/index.ts"],
-      "@court-iq/core": ["../../packages/core/src/index.ts"],
-      "@court-iq/db": ["../../packages/db/src/index.ts"],
-      "@court-iq/auth": ["../../packages/auth/src/index.ts"],
-      "@court-iq/types": ["../../packages/types/src/index.ts"]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.d.ts"],
   "exclude": ["node_modules"]
 }

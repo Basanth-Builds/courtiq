@@ -1,96 +1,90 @@
 'use client'
 
-import Link from 'next/link'
-import { ArrowRight, Zap, Shield, BarChart3 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { ArrowRight, Zap, Trophy, Users } from 'lucide-react'
+import Link from 'next/link'
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden bg-court-dark py-24 md:py-36">
-      {/* Background glow */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-0 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-brand-green/10 blur-3xl" />
-        <div className="absolute right-0 top-1/2 h-[400px] w-[400px] -translate-y-1/2 rounded-full bg-brand-green/5 blur-3xl" />
+    <section className="relative overflow-hidden bg-brand-slate min-h-screen flex items-center">
+      {/* Animated court grid background */}
+      <div className="absolute inset-0 opacity-10">
+        <div
+          className="h-full w-full"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(168,214,52,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(168,214,52,0.3) 1px, transparent 1px)',
+            backgroundSize: '40px 40px',
+          }}
+        />
       </div>
 
-      <div className="container relative mx-auto max-w-7xl px-4 text-center">
-        <Badge
-          variant="outline"
-          className="mb-6 border-brand-green/30 bg-brand-green/10 text-brand-green hover:bg-brand-green/20"
+      {/* Glow effect */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-brand-green/10 blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-6 py-32 text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="space-y-8"
         >
-          <Zap size={12} className="mr-1" />
-          Pickleball tournament automation is here
-        </Badge>
+          <Badge
+            variant="outline"
+            className="border-brand-green/40 bg-brand-green/10 text-brand-green px-4 py-1.5 text-sm"
+          >
+            <Zap className="mr-1.5 h-3.5 w-3.5" />
+            Pickleball’s smartest tournament platform
+          </Badge>
 
-        <h1 className="font-display text-5xl font-black tracking-tight text-white md:text-7xl lg:text-8xl">
-          Score it live.
-          <br />
-          <span className="text-gradient-green">Run it smart.</span>
-        </h1>
+          <h1 className="text-5xl font-bold tracking-tight text-white sm:text-7xl lg:text-8xl">
+            Score it live.
+            <br />
+            <span className="text-brand-green">Run it smart.</span>
+          </h1>
 
-        <p className="mx-auto mt-6 max-w-2xl text-lg text-white/60 md:text-xl">
-          Court IQ automates every step of your pickleball tournament — from real-time scoring and seeding to playoff draws and DUPR submissions. One platform, zero chaos.
-        </p>
+          <p className="mx-auto max-w-2xl text-lg text-gray-300 sm:text-xl">
+            Court IQ automates everything — live scoring, pool seeding, playoff draws, and DUPR
+            submission. One platform for umpires, referees, and tournament directors.
+          </p>
 
-        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Link href="/auth/register">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button
               size="lg"
-              className="h-12 rounded-full bg-brand-green px-8 text-base font-bold text-white hover:bg-brand-green-dark animate-pulse-green"
+              className="h-14 px-8 bg-brand-green text-brand-slate font-bold hover:bg-brand-green-light text-base"
+              asChild
             >
-              Start for free
-              <ArrowRight size={18} className="ml-2" />
+              <Link href="/dashboard">
+                Start your tournament
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </Button>
-          </Link>
-          <Link href="/#how-it-works">
             <Button
               size="lg"
               variant="outline"
-              className="h-12 rounded-full border-white/20 px-8 text-base text-white hover:bg-white/10"
+              className="h-14 px-8 border-white/20 text-white hover:bg-white/10 text-base"
+              asChild
             >
-              See how it works
+              <Link href="#how-it-works">See how it works</Link>
             </Button>
-          </Link>
-        </div>
-
-        {/* Trust badges */}
-        <div className="mt-16 flex flex-col items-center justify-center gap-6 sm:flex-row sm:gap-10">
-          {[
-            { icon: Zap,        label: 'Live scoring in real time' },
-            { icon: BarChart3,  label: 'Auto DUPR submission' },
-            { icon: Shield,     label: 'Two-step confirmation' },
-          ].map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-2 text-sm text-white/50">
-              <Icon size={16} className="text-brand-green" />
-              <span>{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Mock score card */}
-        <div className="mx-auto mt-20 max-w-md animate-slide-up">
-          <div className="court-card overflow-hidden rounded-2xl border-brand-green/20 bg-brand-slate/80 p-6 backdrop-blur-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <span className="status-live">● LIVE</span>
-              <span className="text-xs text-white/40">Court 3 · Pool A</span>
-            </div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1 text-center">
-                <p className="text-sm font-medium text-white/70">Team Smash</p>
-                <p className="score-display mt-2 text-6xl text-white">9</p>
-              </div>
-              <div className="text-2xl font-black text-brand-green">vs</div>
-              <div className="flex-1 text-center">
-                <p className="text-sm font-medium text-white/70">Net Ninjas</p>
-                <p className="score-display mt-2 text-6xl text-brand-green">11</p>
-              </div>
-            </div>
-            <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-              <div className="h-full w-[55%] rounded-full bg-brand-green transition-all duration-500" />
-            </div>
           </div>
-        </div>
+
+          {/* Stats */}
+          <div className="mt-16 grid grid-cols-3 gap-8 pt-8 border-t border-white/10 max-w-xl mx-auto">
+            {[
+              { icon: Trophy, label: 'Tournaments', value: '500+' },
+              { icon: Users, label: 'Players tracked', value: '12K+' },
+              { icon: Zap, label: 'Matches scored', value: '50K+' },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="text-center">
+                <div className="text-3xl font-bold text-brand-green">{value}</div>
+                <div className="mt-1 text-sm text-gray-400">{label}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
       </div>
     </section>
   )

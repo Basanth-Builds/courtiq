@@ -10,63 +10,89 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Court IQ Brand — derived from logo
+        // Court IQ Brand Tokens — from logo
         brand: {
-          green:   '#8DC63F',   // neon court-green (logo accent)
-          'green-light': '#A8D55A',
-          'green-dark':  '#6BA32A',
-          slate:   '#2C3340',   // deep slate (logo text)
-          'slate-light': '#3D4759',
-          charcoal:'#1A1F28',
-          white:   '#FFFFFF',
+          green: '#A8D634',
+          'green-light': '#C4E85A',
+          'green-dark': '#86AA28',
+          slate: '#2D3142',
+          'slate-light': '#3D4252',
+          'slate-dark': '#1E2030',
         },
-        court: {
-          surface:  '#F4F7F0',
-          line:     '#8DC63F',
-          dark:     '#1A1F28',
+        // shadcn/ui CSS variable tokens
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
       },
       fontFamily: {
-        sans:    ['Inter var', 'Inter', 'sans-serif'],
-        display: ['Cal Sans', 'Inter var', 'sans-serif'],
-        mono:    ['JetBrains Mono', 'monospace'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Cal Sans', 'Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
-      animation: {
-        'score-pop': 'scorePop 0.3s ease-out',
-        'slide-up':  'slideUp 0.4s ease-out',
-        'pulse-green': 'pulseGreen 2s ease-in-out infinite',
-        'fade-in': 'fadeIn 0.5s ease-out',
-      },
       keyframes: {
-        scorePop: {
-          '0%':   { transform: 'scale(1)' },
-          '50%':  { transform: 'scale(1.25)', color: '#8DC63F' },
+        'accordion-down': {
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
+        },
+        'score-pop': {
+          '0%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.15)', color: '#A8D634' },
           '100%': { transform: 'scale(1)' },
         },
-        slideUp: {
-          '0%':   { opacity: '0', transform: 'translateY(12px)' },
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        pulseGreen: {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(141,198,63,0.4)' },
-          '50%':      { boxShadow: '0 0 0 12px rgba(141,198,63,0)' },
+        pulse: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
         },
-        fadeIn: {
-          '0%':   { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
+      },
+      animation: {
+        'accordion-down': 'accordion-down 0.2s ease-out',
+        'accordion-up': 'accordion-up 0.2s ease-out',
+        'score-pop': 'score-pop 0.3s ease-in-out',
+        'fade-in-up': 'fade-in-up 0.4s ease-out',
+        pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-    require('tailwindcss-animate'),
-  ],
+  plugins: [require('tailwindcss-animate')],
 }
 
 export default config

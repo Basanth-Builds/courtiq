@@ -1,12 +1,14 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
   experimental: {
-    optimizePackageImports: ['lucide-react', 'framer-motion'],
+    reactCompiler: true,
   },
   images: {
-    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+    ],
   },
 }
 

@@ -1,13 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-import { Toaster } from 'sonner'
 import './globals.css'
+import { Providers } from '@/components/providers'
+import { Toaster } from '@/components/ui/sonner'
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-sans',
-  display: 'swap',
-})
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
 export const metadata: Metadata = {
   title: {
@@ -15,57 +12,45 @@ export const metadata: Metadata = {
     template: '%s | Court IQ',
   },
   description:
-    'The smartest tournament management platform for pickleball. Automate scoring, seeding, playoffs, and DUPR submissions in one place.',
-  keywords: ['pickleball', 'tournament', 'scoring', 'DUPR', 'court management'],
+    'The smartest tournament management platform for pickleball. Live scoring, automated seeding, playoff draws, and DUPR sync — all in one place.',
+  keywords: ['pickleball', 'tournament', 'scoring', 'DUPR', 'Court IQ'],
   authors: [{ name: 'Court IQ' }],
   creator: 'Court IQ',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://courtiq.app'),
   openGraph: {
     type: 'website',
     locale: 'en_US',
     url: 'https://courtiq.app',
-    title: 'Court IQ',
-    description: 'Score it live. Run it smart.',
     siteName: 'Court IQ',
+    title: 'Court IQ — Score it live. Run it smart.',
+    description: 'The smartest tournament management platform for pickleball.',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Court IQ',
-    description: 'Score it live. Run it smart.',
+    description: 'The smartest tournament management platform for pickleball.',
   },
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
+  manifest: '/site.webmanifest',
 }
 
 export const viewport: Viewport = {
-  themeColor: '#a8d634',
+  themeColor: '#A8D634',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body>
-        {children}
-        <Toaster
-          position="top-right"
-          theme="dark"
-          toastOptions={{
-            style: {
-              background: 'hsl(222 47% 13%)',
-              border: '1px solid hsl(222 47% 20%)',
-              color: 'hsl(210 40% 98%)',
-            },
-          }}
-        />
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans antialiased`}>
+        <Providers>
+          {children}
+          <Toaster richColors position="top-right" />
+        </Providers>
       </body>
     </html>
   )

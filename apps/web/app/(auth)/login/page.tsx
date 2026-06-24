@@ -1,33 +1,82 @@
-import Link from 'next/link'
-import { PhoneLoginForm } from '@/components/auth/phone-login-form'
+'use client'
 
-export const metadata = { title: 'Sign In' }
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CourtIQLogo } from '@/components/court-iq-logo'
+import { PhoneInput } from '@/components/auth/phone-input'
+import { OtpInput } from '@/components/auth/otp-input'
+
+type Step = 'phone' | 'otp'
 
 export default function LoginPage() {
+  const [step, setStep] = useState<Step>('phone')
+  const [phone, setPhone] = useState('')
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  async function handleSendOtp(phoneNumber: string) {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNumber }),
+      })
+      if (res.ok) {
+        setPhone(phoneNumber)
+        setStep('otp')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleVerifyOtp(otp: string) {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, otp }),
+      })
+      if (res.ok) {
+        router.push('/dashboard')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-court-pattern flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-black tracking-tight">
-            Court <span className="text-gradient">IQ</span>
-          </h1>
-          <p className="mt-2 text-white/50 text-sm">Score it live. Run it smart.</p>
+    <div className="flex min-h-screen items-center justify-center bg-brand-slate p-4">
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex flex-col items-center gap-3">
+          <CourtIQLogo className="h-12 w-auto" />
+          <p className="text-sm text-muted-foreground">Score it live. Run it smart.</p>
         </div>
-
-        {/* Card */}
-        <div className="rounded-2xl bg-white/5 border border-white/10 p-8">
-          <h2 className="text-xl font-bold mb-2">Welcome back</h2>
-          <p className="text-white/50 text-sm mb-8">Enter your phone number to sign in or create an account.</p>
-          <PhoneLoginForm />
-        </div>
-
-        <p className="text-center mt-6 text-white/30 text-xs">
-          By signing in you agree to our{' '}
-          <Link href="/terms" className="text-[#a8d634]/70 hover:text-[#a8d634]">Terms</Link>
-          {' '}and{' '}
-          <Link href="/privacy" className="text-[#a8d634]/70 hover:text-[#a8d634]">Privacy Policy</Link>.
-        </p>
+        <Card className="border-brand-slate-light bg-card/90 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="text-xl">
+              {step === 'phone' ? 'Welcome back' : 'Enter your code'}
+            </CardTitle>
+            <CardDescription>
+              {step === 'phone'
+                ? 'Enter your phone number to sign in or create your account.'
+                : `We sent a 6-digit code to ${phone}`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {step === 'phone' ? (
+              <PhoneInput onSubmit={handleSendOtp} loading={loading} />
+            ) : (
+              <OtpInput onSubmit={handleVerifyOtp} loading={loading} onBack={() => setStep('phone')} />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
