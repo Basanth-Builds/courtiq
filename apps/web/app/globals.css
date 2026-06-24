@@ -4,62 +4,69 @@
 
 @layer base {
   :root {
-    /* Court IQ dark theme as default */
-    --background: 231 17% 14%;       /* #1E2030 slate-dark */
+    --background: 231 17% 14%;
     --foreground: 0 0% 95%;
-
-    --card: 231 14% 18%;             /* #2D3142 slate-deep */
+    --card: 231 14% 18%;
     --card-foreground: 0 0% 95%;
-
     --border: 231 14% 25%;
     --input: 231 14% 22%;
-    --ring: 80 65% 52%;              /* court-green */
-
-    --primary: 80 65% 52%;           /* #A8D634 */
+    --ring: 80 65% 52%;
+    --primary: 80 65% 52%;
     --primary-foreground: 231 17% 10%;
-
     --secondary: 231 14% 25%;
     --secondary-foreground: 0 0% 90%;
-
     --muted: 231 14% 22%;
     --muted-foreground: 0 0% 55%;
-
     --accent: 80 65% 52%;
     --accent-foreground: 231 17% 10%;
-
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-
     --radius: 0.5rem;
-  }
-
-  /* Optional: light mode override */
-  .light {
-    --background: 0 0% 98%;
-    --foreground: 231 17% 14%;
-    --card: 0 0% 100%;
-    --card-foreground: 231 17% 14%;
-    --border: 231 14% 88%;
-    --input: 231 14% 90%;
-    --primary: 80 65% 40%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 231 14% 92%;
-    --secondary-foreground: 231 17% 14%;
-    --muted: 231 14% 94%;
-    --muted-foreground: 231 14% 45%;
-    --accent: 80 65% 40%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 98%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
   body {
     @apply bg-background text-foreground;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+    background-color: #1E2030;
+    color: #f2f2f2;
   }
+}
+
+@layer utilities {
+  /* Court IQ gradient text */
+  .text-gradient {
+    background: linear-gradient(135deg, #A8D634 0%, #C4E85A 50%, #86AA28 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Court pattern background */
+  .bg-court-pattern {
+    background-color: #1E2030;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(168, 214, 52, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(168, 214, 52, 0.04) 0%, transparent 50%);
+  }
+
+  /* Glow effects */
+  .glow-green {
+    box-shadow: 0 0 20px rgba(168, 214, 52, 0.25);
+  }
+  .glow-green:hover {
+    box-shadow: 0 0 30px rgba(168, 214, 52, 0.4);
+  }
+  .glow-green-intense {
+    box-shadow: 0 0 30px rgba(168, 214, 52, 0.35), 0 0 60px rgba(168, 214, 52, 0.15);
+  }
+  .glow-green-intense:hover {
+    box-shadow: 0 0 40px rgba(168, 214, 52, 0.5), 0 0 80px rgba(168, 214, 52, 0.2);
+  }
+
+  /* Backdrop blur variants */
+  .bg-white\/2 { background-color: rgba(255, 255, 255, 0.02); }
+  .bg-white\/8 { background-color: rgba(255, 255, 255, 0.08); }
 }
