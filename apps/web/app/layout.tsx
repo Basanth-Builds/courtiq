@@ -1,12 +1,11 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-import './globals.css'
 import { Toaster } from 'sonner'
-import { Providers } from '@/components/providers'
+import './globals.css'
 
 const inter = Inter({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-sans',
   display: 'swap',
 })
 
@@ -16,12 +15,17 @@ export const metadata: Metadata = {
     template: '%s | Court IQ',
   },
   description:
-    'The intelligent tournament platform for pickleball. Automate scoring, seeding, playoffs, and DUPR submissions in real time.',
-  keywords: ['pickleball', 'tournament', 'scoring', 'DUPR', 'live score', 'court management'],
+    'The smartest tournament management platform for pickleball. Automate scoring, seeding, playoffs, and DUPR submissions in one place.',
+  keywords: ['pickleball', 'tournament', 'scoring', 'DUPR', 'court management'],
+  authors: [{ name: 'Court IQ' }],
+  creator: 'Court IQ',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://courtiq.app'),
   openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://courtiq.app',
     title: 'Court IQ',
     description: 'Score it live. Run it smart.',
-    type: 'website',
     siteName: 'Court IQ',
   },
   twitter: {
@@ -29,7 +33,17 @@ export const metadata: Metadata = {
     title: 'Court IQ',
     description: 'Score it live. Run it smart.',
   },
-  robots: { index: true, follow: true },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#a8d634',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
 }
 
 export default function RootLayout({
@@ -38,20 +52,20 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
-        <Providers>
-          {children}
-          <Toaster
-            position="bottom-right"
-            toastOptions={{
-              classNames: {
-                toast: 'font-sans',
-                success: 'border-brand-green/30 bg-brand-green/5',
-              },
-            }}
-          />
-        </Providers>
+    <html lang="en" className={inter.variable}>
+      <body>
+        {children}
+        <Toaster
+          position="top-right"
+          theme="dark"
+          toastOptions={{
+            style: {
+              background: 'hsl(222 47% 13%)',
+              border: '1px solid hsl(222 47% 20%)',
+              color: 'hsl(210 40% 98%)',
+            },
+          }}
+        />
       </body>
     </html>
   )
