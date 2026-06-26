@@ -13,6 +13,11 @@ const OtpSchema = z.object({
 })
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Required for NextAuth v5 beta on localhost / non-HTTPS hosts
+  trustHost: true,
+
+  secret: process.env.AUTH_SECRET ?? 'dev-secret-change-in-production',
+
   providers: [
     Credentials({
       name: 'Phone OTP',
@@ -23,6 +28,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         const parsed = OtpSchema.safeParse(credentials)
         if (!parsed.success) return null
+
+        // Skip DB call if no DATABASE_URL is set (dev without DB)
+        if (!process.env.DATABASE_URL) {
+          console.warn('[Court IQ] No DATABASE_URL set — auth will not work until DB is configured')
+          return null
+        }
 
         // Dynamic import to avoid edge runtime issues
         const { userRepository } = await import('@court-iq/db')
@@ -42,6 +53,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     }),
   ],
+
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -60,8 +72,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session
     },
   },
+
   pages: {
     signIn: '/login',
   },
+
   session: { strategy: 'jwt' },
 })
