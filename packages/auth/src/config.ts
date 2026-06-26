@@ -8,12 +8,11 @@ import Credentials from 'next-auth/providers/credentials'
 import { z } from 'zod'
 
 const OtpSchema = z.object({
-  phone: z.string().min(10),
+  phone: z.string().min(7),
   code: z.string().length(6),
 })
 
-// Ensure localStorage is safe to access in SSR context
-// (Node may have a broken localStorage stub from --localstorage-file flag)
+// Guard against broken localStorage stub from --localstorage-file Node flag
 if (typeof globalThis !== 'undefined') {
   const ls = (globalThis as any).localStorage
   if (!ls || typeof ls.getItem !== 'function') {
@@ -43,19 +42,42 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const parsed = OtpSchema.safeParse(credentials)
         if (!parsed.success) return null
 
-        if (!process.env.DATABASE_URL) {
-          console.warn('[Court IQ] DATABASE_URL not set — skipping auth DB check')
-          return null
+        const { phone, code } = parsed.data
+        const isDev = process.env.NODE_ENV === 'development' || !process.env.DATABASE_URL
+
+        if (isDev) {
+          // Dev: accept 000000 as master code, or verify via API route store
+          if (code !== '000000') {
+            // Verify against in-memory store via internal fetch
+            try {
+              const base = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+              const res = await fetch(`${base}/api/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone, code }),
+              })
+              if (!res.ok) return null
+            } catch {
+              return null
+            }
+          }
+          // Return a dev user
+          return {
+            id: `dev-${phone}`,
+            phone,
+            name: 'Dev User',
+            role: 'ADMIN',
+          }
         }
 
+        // Production: verify against DB
+        if (!process.env.DATABASE_URL) return null
+
         const { userRepository } = await import('@court-iq/db')
-        const session = await userRepository.verifyOtpSession(
-          parsed.data.phone,
-          parsed.data.code
-        )
+        const session = await userRepository.verifyOtpSession(phone, code)
         if (!session) return null
 
-        const user = await userRepository.upsertByPhone(parsed.data.phone)
+        const user = await userRepository.upsertByPhone(phone)
         return {
           id: user.id,
           phone: user.phone,
@@ -70,16 +92,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
-        token.phone = (user as { phone?: string }).phone
-        token.role = (user as { role?: string }).role
+        token.phone = (user as any).phone
+        token.role = (user as any).role
       }
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
-        ;(session.user as { phone?: string }).phone = token.phone as string
-        ;(session.user as { role?: string }).role = token.role as string
+        ;(session.user as any).phone = token.phone
+        ;(session.user as any).role = token.role
       }
       return session
     },
