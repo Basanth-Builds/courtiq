@@ -1,8 +1,3 @@
-// ============================================================
-// Court IQ — NextAuth v5 Config
-// Phone OTP via credentials provider
-// ============================================================
-
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { z } from 'zod'
@@ -12,7 +7,7 @@ const OtpSchema = z.object({
   code: z.string().length(6),
 })
 
-// Guard against broken localStorage stub from --localstorage-file Node flag
+// Guard broken localStorage stub from --localstorage-file Node flag
 if (typeof globalThis !== 'undefined') {
   const ls = (globalThis as any).localStorage
   if (!ls || typeof ls.getItem !== 'function') {
@@ -46,37 +41,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const isDev = process.env.NODE_ENV === 'development' || !process.env.DATABASE_URL
 
         if (isDev) {
-          // Dev: accept 000000 as master code, or verify via API route store
-          if (code !== '000000') {
-            // Verify against in-memory store via internal fetch
-            try {
-              const base = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
-              const res = await fetch(`${base}/api/auth/verify-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, code }),
-              })
-              if (!res.ok) return null
-            } catch {
-              return null
-            }
+          // Accept master dev bypass
+          if (code === '000000') {
+            return { id: `dev-${phone}`, phone, name: 'Dev User', role: 'ADMIN' }
           }
-          // Return a dev user
-          return {
-            id: `dev-${phone}`,
-            phone,
-            name: 'Dev User',
-            role: 'ADMIN',
+          // Verify via internal API (shares the same in-memory store)
+          try {
+            const base = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+            const res = await fetch(`${base}/api/auth/verify-otp`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ phone, code }),
+            })
+            if (!res.ok) return null
+          } catch {
+            return null
           }
+          return { id: `dev-${phone}`, phone, name: 'Dev User', role: 'ADMIN' }
         }
 
-        // Production: verify against DB
+        // Production
         if (!process.env.DATABASE_URL) return null
-
         const { userRepository } = await import('@court-iq/db')
         const session = await userRepository.verifyOtpSession(phone, code)
         if (!session) return null
-
         const user = await userRepository.upsertByPhone(phone)
         return {
           id: user.id,

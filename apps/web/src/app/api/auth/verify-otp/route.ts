@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { devOtpStore } from '@/lib/dev-otp-store'
 
 const schema = z.object({
   phone: z.string().min(7),
@@ -18,12 +19,10 @@ export async function POST(req: NextRequest) {
     const isDev = process.env.NODE_ENV === 'development' || !process.env.DATABASE_URL
 
     if (isDev) {
-      // In dev, accept code 000000 always, or whatever was generated
+      // Master bypass code for dev
       if (code === '000000') {
         return NextResponse.json({ success: true })
       }
-      // Check in-memory store
-      const { devOtpStore } = await import('../send-otp/route')
       const entry = devOtpStore.get(phone)
       if (!entry || entry.expiresAt < Date.now()) {
         return NextResponse.json({ error: 'Code expired or not found' }, { status: 401 })
@@ -35,7 +34,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true })
     }
 
-    // Production: verify against DB
+    // Production: DB verification
     const { userRepository } = await import('@court-iq/db')
     const session = await userRepository.verifyOtpSession(phone, code)
     if (!session) {
