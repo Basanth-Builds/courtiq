@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* ─── Brand Colors ─────────────────────────────────── */
+  /* ─── Brand Colors ────────────────────────────────── */
   --color-brand-green:           #A8D634;
   --color-brand-green-light:     #C4E85A;
   --color-brand-green-dark:      #86AA28;
@@ -10,19 +10,19 @@
   --color-brand-slate-mid:       #2D3142;
   --color-brand-slate-light:     #3D4252;
 
-  /* ─── Semantic Surface Tokens ──────────────────────── */
+  /* ─── Semantic Surface Tokens ─────────────────────── */
   --color-background:            #1A1D2E;
   --color-background-secondary:  #1E2030;
   --color-surface:               #242638;
   --color-surface-hover:         #2D3048;
   --color-surface-border:        rgba(255,255,255,0.08);
 
-  /* ─── Semantic Foreground Tokens ───────────────────── */
+  /* ─── Semantic Foreground Tokens ──────────────────── */
   --color-foreground:            #F0F0F5;
   --color-foreground-muted:      rgba(240,240,245,0.55);
   --color-foreground-subtle:     rgba(240,240,245,0.35);
 
-  /* ─── shadcn/ui compat aliases ─────────────────────── */
+  /* ─── shadcn/ui compat aliases ────────────────────── */
   --color-border:                rgba(255,255,255,0.08);
   --color-input:                 #242638;
   --color-ring:                  #A8D634;
@@ -41,22 +41,22 @@
   --color-popover:               #242638;
   --color-popover-foreground:    #F0F0F5;
 
-  /* ─── Typography ────────────────────────────────────── */
+  /* ─── Typography ──────────────────────────────────── */
   --font-sans:    'Inter', system-ui, sans-serif;
   --font-display: 'Inter', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
 
-  /* ─── Radius ────────────────────────────────────────── */
+  /* ─── Radius ──────────────────────────────────────── */
   --radius:    0.5rem;
   --radius-lg: 0.75rem;
   --radius-md: 0.5rem;
   --radius-sm: 0.375rem;
 
-  /* ─── Shadows / Glow ────────────────────────────────── */
+  /* ─── Shadows / Glow ──────────────────────────────── */
   --shadow-glow:        0 0 20px rgba(168,214,52,0.25);
   --shadow-glow-strong: 0 0 35px rgba(168,214,52,0.4), 0 0 70px rgba(168,214,52,0.15);
 
-  /* ─── Animations ────────────────────────────────────── */
+  /* ─── Animations ──────────────────────────────────── */
   --animate-score-pop:   score-pop 0.3s ease-in-out;
   --animate-fade-in-up:  fade-in-up 0.4s ease-out;
 }
@@ -72,7 +72,7 @@
   100% { opacity: 1; transform: translateY(0); }
 }
 
-/* ─── Base Reset ─────────────────────────────────────── */
+/* ─── Base ───────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
@@ -83,7 +83,15 @@ body {
   font-feature-settings: 'rlig' 1, 'calt' 1;
 }
 
-/* ─── Custom Utilities ───────────────────────────────── */
+/* ─── Utility Classes ────────────────────────────────── */
+
+/* Glassmorphism nav */
+.glass {
+  background: rgba(26, 29, 46, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
 .gradient-text {
   background: linear-gradient(135deg, #A8D634 0%, #C4E85A 50%, #86AA28 100%);
   -webkit-background-clip: text;
@@ -115,6 +123,9 @@ body {
 
 .shadow-glow        { box-shadow: 0 0 20px rgba(168,214,52,0.25); }
 .shadow-glow-strong { box-shadow: 0 0 35px rgba(168,214,52,0.4), 0 0 70px rgba(168,214,52,0.15); }
+
+/* Score animation */
+.animate-score-pop { animation: score-pop 0.3s ease-in-out; }
 
 /* Scrollbar */
 ::-webkit-scrollbar       { width: 6px; height: 6px; }
