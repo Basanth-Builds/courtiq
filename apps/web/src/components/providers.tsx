@@ -1,9 +1,11 @@
 'use client'
 
-import { SessionProvider } from 'next-auth/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useState } from 'react'
 
+// SessionProvider intentionally excluded at top-level.
+// It will be added back inside authenticated route group layouts only,
+// wrapped in dynamic import with ssr:false to prevent SSR evaluation.
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -18,12 +20,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    // basePath must match next-auth route. refetchOnWindowFocus=false avoids
-    // SSR/hydration mismatches in dev
-    <SessionProvider basePath="/api/auth" refetchOnWindowFocus={false}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    </SessionProvider>
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
   )
 }

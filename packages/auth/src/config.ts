@@ -12,11 +12,25 @@ const OtpSchema = z.object({
   code: z.string().length(6),
 })
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
-  // Required for NextAuth v5 beta on localhost / non-HTTPS hosts
-  trustHost: true,
+// Ensure localStorage is safe to access in SSR context
+// (Node may have a broken localStorage stub from --localstorage-file flag)
+if (typeof globalThis !== 'undefined') {
+  const ls = (globalThis as any).localStorage
+  if (!ls || typeof ls.getItem !== 'function') {
+    ;(globalThis as any).localStorage = {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+      clear: () => {},
+      length: 0,
+      key: () => null,
+    }
+  }
+}
 
-  secret: process.env.AUTH_SECRET ?? 'dev-secret-change-in-production',
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
+  secret: process.env.AUTH_SECRET ?? 'court-iq-dev-secret-change-in-production',
 
   providers: [
     Credentials({
@@ -29,13 +43,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const parsed = OtpSchema.safeParse(credentials)
         if (!parsed.success) return null
 
-        // Skip DB call if no DATABASE_URL is set (dev without DB)
         if (!process.env.DATABASE_URL) {
-          console.warn('[Court IQ] No DATABASE_URL set — auth will not work until DB is configured')
+          console.warn('[Court IQ] DATABASE_URL not set — skipping auth DB check')
           return null
         }
 
-        // Dynamic import to avoid edge runtime issues
         const { userRepository } = await import('@court-iq/db')
         const session = await userRepository.verifyOtpSession(
           parsed.data.phone,
@@ -73,9 +85,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
 
-  pages: {
-    signIn: '/login',
-  },
-
+  pages: { signIn: '/login' },
   session: { strategy: 'jwt' },
 })
