@@ -1,25 +1,28 @@
 import type { NextConfig } from 'next'
 
-// Polyfill localStorage for SSR — fixes `--localstorage-file` Node flag
-// creating a broken localStorage object that throws on .getItem
-// This runs before any module that calls localStorage on the server
-if (typeof globalThis.localStorage === 'undefined' || typeof globalThis.localStorage?.getItem !== 'function') {
-  // @ts-ignore
-  globalThis.localStorage = {
-    getItem: () => null,
-    setItem: () => {},
-    removeItem: () => {},
-    clear: () => {},
-    length: 0,
-    key: () => null,
+// Polyfill broken localStorage stub from --localstorage-file Node flag
+if (typeof globalThis !== 'undefined') {
+  const ls = (globalThis as any).localStorage
+  if (!ls || typeof ls?.getItem !== 'function') {
+    ;(globalThis as any).localStorage = {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+      clear: () => {},
+      length: 0,
+      key: () => null,
+    }
   }
 }
 
 const nextConfig: NextConfig = {
   experimental: {
-    // Ensure packages/auth runs in nodejs runtime, not edge
     serverComponentsExternalPackages: ['@court-iq/auth', 'next-auth'],
   },
+  // Explicitly tell Next.js the app root is src/
+  // This prevents the ghost apps/web/app/ directory from being scanned
+  // as a second App Router root causing duplicate route conflicts
+  distDir: '.next',
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'avatars.githubusercontent.com' },

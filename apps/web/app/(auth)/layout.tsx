@@ -1,7 +1,5 @@
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-brand-slate">
-      {children}
-    </div>
-  )
+// GHOST FILE — real layout is in src/app/(auth)/layout.tsx
+// This stub prevents Next.js from treating this as an active layout
+export default function GhostLayout({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
 }
