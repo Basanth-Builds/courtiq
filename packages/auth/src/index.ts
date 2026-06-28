@@ -4,4 +4,5 @@
 export { handlers, signIn, signOut, auth } from './config'
 export * from './roles'
 export * from './otp'
+export * from './firebase'
 export type { Session, User } from 'next-auth'

@@ -1,5 +1,5 @@
 // Synced with src/app/(auth)/login/page.tsx — ghost copy kept identical to avoid stale cache conflicts
-import { PhoneAuthForm } from '@/components/auth/phone-auth-form'
+import { PhoneLoginForm } from '@/components/auth/phone-login-form'
 import { Logo } from '@/components/ui/logo'
 
 export const metadata = { title: 'Sign In' }
@@ -18,7 +18,7 @@ export default function LoginPage() {
           <p className="text-foreground-muted text-sm mb-8">
             Enter your phone number to continue
           </p>
-          <PhoneAuthForm />
+          <PhoneLoginForm />
         </div>
       </div>
     </div>

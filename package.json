@@ -8,7 +8,7 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "prettier --write .",
-    "db:generate": "pnpm --filter @court-iq/db prisma generate",
+    "db:generate": "pnpm --filter @court-iq/db db:generate",
     "db:migrate": "pnpm --filter @court-iq/db prisma migrate dev",
     "db:seed": "pnpm --filter @court-iq/db tsx prisma/seed.ts"
   },
