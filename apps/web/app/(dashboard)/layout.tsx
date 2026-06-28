@@ -1,4 +1,2 @@
-// GHOST FILE — real layout is in src/app/(dashboard)/layout.tsx
-export default function GhostLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
-}
+// GHOST FILE — canonical layout is src/app/(dashboard)/layout.tsx
+export { default } from '../../src/app/(dashboard)/layout'

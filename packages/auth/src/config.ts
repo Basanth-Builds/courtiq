@@ -1,10 +1,10 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { z } from 'zod'
+import { verifyFirebaseIdToken } from './firebase'
 
-const OtpSchema = z.object({
-  phone: z.string().min(7),
-  code: z.string().length(6),
+const FirebaseSchema = z.object({
+  idToken: z.string().min(1),
 })
 
 // Guard broken localStorage stub from --localstorage-file Node flag
@@ -28,49 +28,36 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
   providers: [
     Credentials({
-      name: 'Phone OTP',
+      name: 'Firebase Phone',
       credentials: {
-        phone: { label: 'Phone', type: 'tel' },
-        code: { label: 'OTP Code', type: 'text' },
+        idToken: { label: 'Firebase ID Token', type: 'text' },
       },
       async authorize(credentials) {
-        const parsed = OtpSchema.safeParse(credentials)
+        const parsed = FirebaseSchema.safeParse(credentials)
         if (!parsed.success) return null
 
-        const { phone, code } = parsed.data
-        const isDev = process.env.NODE_ENV === 'development' || !process.env.DATABASE_URL
+        const firebaseUser = await verifyFirebaseIdToken(parsed.data.idToken)
+        if (!firebaseUser) return null
 
-        if (isDev) {
-          // Accept master dev bypass
-          if (code === '000000') {
-            return { id: `dev-${phone}`, phone, name: 'Dev User', role: 'ADMIN' }
-          }
-          // Verify via internal API (shares the same in-memory store)
-          try {
-            const base = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
-            const res = await fetch(`${base}/api/auth/verify-otp`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ phone, code }),
-            })
-            if (!res.ok) return null
-          } catch {
-            return null
-          }
-          return { id: `dev-${phone}`, phone, name: 'Dev User', role: 'ADMIN' }
+        const { phone, uid } = firebaseUser
+
+        if (!process.env.DATABASE_URL) {
+          return { id: uid, phone, name: 'Dev User', role: 'ADMIN' }
         }
 
-        // Production
-        if (!process.env.DATABASE_URL) return null
-        const { userRepository } = await import('@court-iq/db')
-        const session = await userRepository.verifyOtpSession(phone, code)
-        if (!session) return null
-        const user = await userRepository.upsertByPhone(phone)
-        return {
-          id: user.id,
-          phone: user.phone,
-          name: user.name ?? undefined,
-          role: user.role,
+        try {
+          const { userRepository } = await import('@court-iq/db')
+          const user = await userRepository.upsertByPhone(phone)
+          return {
+            id: user.id,
+            phone: user.phone,
+            name: user.name ?? undefined,
+            role: user.role,
+          }
+        } catch (error) {
+          console.error('[Court IQ] DB upsert failed during sign-in:', error)
+          // Allow sign-in even if DB is unavailable; user can be synced later.
+          return { id: uid, phone, name: undefined, role: 'SPECTATOR' }
         }
       },
     }),
