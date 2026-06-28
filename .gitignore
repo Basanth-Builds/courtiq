@@ -1,21 +1,30 @@
 # Dependencies
 node_modules
-.pnpm-store
+.pnp
+.pnp.js
 
 # Build outputs
 .next
 dist
 out
-.turbo
+build
 
 # Cloudflare
 .wrangler
-.open-next
 
-# Env files
+# Environment
 .env
 .env.local
 .env.*.local
+
+# Turbo
+.turbo
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
 
 # OS
 .DS_Store
@@ -25,13 +34,3 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
-
-# Prisma
-prisma/*.db
-prisma/*.db-journal
-
-# Editor
-.vscode/*
-!.vscode/extensions.json
-!.vscode/settings.json
-.idea
