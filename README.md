@@ -1,28 +1,33 @@
-# Court IQ
+# Court IQ 🏓
 
-> Score it live. Run it smart.
+> **Score it live. Run it smart.**
 
-Court IQ is a production-grade tournament management platform built specifically for pickleball — automating score entry, pool seeding, playoff draws, and DUPR submissions with a two-step confirmation workflow.
+Court IQ is a production-grade tournament management platform built for pickleball — automating score entry, pool seeding, playoff draws, and DUPR submission from a single smart interface.
 
 ## Stack
 
 | Layer | Technology |
-|---|---|
-| Framework | Next.js 15 (TypeScript) |
-| Monorepo | Turborepo + pnpm workspaces |
-| UI | shadcn/ui + Tailwind CSS |
-| Database | PostgreSQL via Prisma |
+|-------|------------|
+| Framework | Next.js 15 (App Router) |
 | Hosting | Cloudflare Pages + Workers |
-| Auth | Phone OTP (NextAuth v5) |
-| DUPR | CSV export fallback |
+| Auth | Phone OTP via Twilio Verify |
+| UI | shadcn/ui + Tailwind CSS v4 |
+| Database | PostgreSQL + Prisma |
+| Monorepo | Turborepo + pnpm |
+| Jobs | Cloudflare Workers |
 
-## Branches
+## Apps & Packages
 
-| Branch | Purpose |
-|---|---|
-| `main` | Production |
-| `staging` | Demo & Testing |
-| `dev` | Active Development |
+| Package | Description |
+|---------|-------------|
+| `apps/web` | Main Next.js web application |
+| `apps/worker` | Cloudflare Worker for background jobs |
+| `packages/ui` | Shared shadcn/ui component system |
+| `packages/core` | Tournament engine, seeding, bracket logic |
+| `packages/db` | Prisma schema + data access layer |
+| `packages/auth` | Phone OTP + RBAC |
+| `packages/types` | Shared TypeScript types |
+| `packages/config` | Shared ESLint, TS, Tailwind configs |
 
 ## Getting Started
 
@@ -30,45 +35,30 @@ Court IQ is a production-grade tournament management platform built specifically
 # Install dependencies
 pnpm install
 
-# Run dev
-pnpm dev
+# Copy env file
+cp .env.example .env
 
-# Build all apps
-pnpm build
+# Generate Prisma client
+pnpm db:generate
 
-# Run DB migrations
+# Run migrations
 pnpm db:migrate
 
-# Seed DB
+# Seed sample data
 pnpm db:seed
+
+# Start all apps in dev mode
+pnpm dev
 ```
 
-## Monorepo Structure
+## Branches
 
-```
-court-iq/
-├── apps/
-│   ├── web/          # Next.js app (Cloudflare Pages)
-│   └── worker/       # Cloudflare Worker (async jobs)
-├── packages/
-│   ├── ui/           # shadcn/ui design system
-│   ├── core/         # Tournament engine & business logic
-│   ├── db/           # Prisma schema & repositories
-│   ├── auth/         # Phone OTP & RBAC
-│   ├── config/       # Shared ESLint, TS, Tailwind configs
-│   └── types/        # Shared TypeScript interfaces
-├── turbo.json
-├── pnpm-workspace.yaml
-└── package.json
-```
-
-## Roles
-
-- **Admin** — create tournaments, manage participants, export DUPR
-- **Referee** — confirm scores, trigger DUPR upload queue
-- **Umpire** — live score entry on Court Desk
-- **Spectator** — read-only live view (public URL)
+| Branch | Purpose |
+|--------|----------|
+| `main` | Production |
+| `staging` | Demo & testing |
+| `dev` | Active development |
 
 ## License
 
-Private — © Court IQ. All rights reserved.
+Private — Court IQ © 2026
