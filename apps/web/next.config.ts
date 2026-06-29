@@ -16,12 +16,8 @@ if (typeof globalThis !== 'undefined') {
 }
 
 const nextConfig: NextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['@court-iq/auth', 'next-auth'],
-  },
-  // Explicitly tell Next.js the app root is src/
-  // This prevents the ghost apps/web/app/ directory from being scanned
-  // as a second App Router root causing duplicate route conflicts
+  // Next.js 15: moved out of experimental
+  serverExternalPackages: ['@court-iq/auth', 'next-auth', 'firebase-admin'],
   distDir: '.next',
   images: {
     remotePatterns: [
