@@ -1,6 +1,3 @@
-// Court IQ — NextAuth v4 config
-// next-auth v5 beta has a broken ESM import (next/server without .js extension)
-// that crashes under Node strict ESM resolver. v4 is stable + fully compatible.
 import NextAuth, { type NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { z } from 'zod'
@@ -9,6 +6,37 @@ const Schema = z.object({
   phone:   z.string().min(7),
   idToken: z.string().min(10),
 })
+
+// Singleton Firebase Admin — initialised once, reused across requests
+let adminAppPromise: Promise<any> | null = null
+
+async function getAdminApp() {
+  if (adminAppPromise) return adminAppPromise
+  adminAppPromise = (async () => {
+    const { getApps, initializeApp, cert } = await import('firebase-admin/app')
+    if (getApps().length > 0) return getApps()[0]
+
+    const projectId   = process.env.FIREBASE_PROJECT_ID
+    const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
+    const rawKey      = process.env.FIREBASE_PRIVATE_KEY
+
+    if (!projectId || !clientEmail || !rawKey) {
+      throw new Error(
+        `[Court IQ] Missing Firebase Admin env vars. ` +
+        `projectId=${!!projectId} clientEmail=${!!clientEmail} privateKey=${!!rawKey}`
+      )
+    }
+
+    // .env files store \n as literal two-char sequence \\n
+    // Handle both: already-real-newlines and escaped \n strings
+    const privateKey = rawKey.includes('\\n')
+      ? rawKey.replace(/\\n/g, '\n')
+      : rawKey
+
+    return initializeApp({ credential: cert({ projectId, clientEmail, privateKey }) })
+  })()
+  return adminAppPromise
+}
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? 'court-iq-dev-secret',
@@ -21,59 +49,46 @@ export const authOptions: NextAuthOptions = {
         idToken: { label: 'Firebase Token', type: 'text' },
       },
       async authorize(credentials) {
-        const parsed = Schema.safeParse(credentials)
-        if (!parsed.success) return null
-
-        const { phone, idToken } = parsed.data
-
-        // Verify Firebase ID token server-side
         try {
-          const { getApps, initializeApp, cert } = await import('firebase-admin/app')
-          const { getAuth } = await import('firebase-admin/auth')
-
-          const adminApp =
-            getApps().length > 0
-              ? getApps()[0]
-              : initializeApp({
-                  credential: cert({
-                    projectId:   process.env.FIREBASE_PROJECT_ID!,
-                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-                    privateKey:  process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
-                  }),
-                })
-
-          const decoded = await getAuth(adminApp).verifyIdToken(idToken)
-          if (decoded.phone_number !== phone) {
-            console.error('[Court IQ] Token phone mismatch:', decoded.phone_number, '!==', phone)
+          const parsed = Schema.safeParse(credentials)
+          if (!parsed.success) {
+            console.error('[Court IQ] authorize: invalid credentials shape', credentials)
             return null
           }
-        } catch (e: any) {
-          console.error('[Court IQ] Firebase token verify failed:', e?.message)
-          return null
-        }
 
-        // Upsert user in DB if available
-        if (process.env.DATABASE_URL) {
-          try {
-            const { userRepository } = await import('@court-iq/db')
-            const user = await userRepository.upsertByPhone(phone)
-            return {
-              id:    user.id,
-              phone: user.phone,
-              name:  user.name ?? '',
-              role:  user.role,
-            }
-          } catch (e) {
-            console.error('[Court IQ] DB upsert failed, using dev fallback:', e)
+          const { phone, idToken } = parsed.data
+          console.log('[Court IQ] authorize: verifying token for', phone)
+
+          const adminApp = await getAdminApp()
+          const { getAuth } = await import('firebase-admin/auth')
+          const decoded = await getAuth(adminApp).verifyIdToken(idToken)
+
+          console.log('[Court IQ] authorize: token OK, phone in token =', decoded.phone_number)
+
+          if (decoded.phone_number !== phone) {
+            console.error('[Court IQ] authorize: phone mismatch', decoded.phone_number, '!==', phone)
+            return null
           }
-        }
 
-        // Dev fallback — works without a database
-        return {
-          id:    `firebase-${phone}`,
-          phone,
-          name:  'Dev User',
-          role:  'ADMIN',
+          // Upsert in DB if available
+          if (process.env.DATABASE_URL) {
+            try {
+              const { userRepository } = await import('@court-iq/db')
+              const user = await userRepository.upsertByPhone(phone)
+              return { id: user.id, phone: user.phone, name: user.name ?? '', role: user.role }
+            } catch (dbErr) {
+              console.error('[Court IQ] DB upsert failed, using dev fallback:', dbErr)
+            }
+          }
+
+          // Dev fallback — no DB required
+          console.log('[Court IQ] authorize: success (dev fallback), phone =', phone)
+          return { id: `firebase-${phone}`, phone, name: 'Dev User', role: 'ADMIN' }
+
+        } catch (err: any) {
+          // Log full error so terminal shows exactly what broke
+          console.error('[Court IQ] authorize CRASHED:', err?.message ?? err)
+          return null
         }
       },
     }),
@@ -90,7 +105,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id           = token.id as string
+        session.user.id              = token.id as string
         ;(session.user as any).phone = token.phone
         ;(session.user as any).role  = token.role
       }
@@ -100,9 +115,14 @@ export const authOptions: NextAuthOptions = {
 
   pages:   { signIn: '/login' },
   session: { strategy: 'jwt' },
+
+  // Suppress NextAuth's own error page redirect — return JSON instead
+  logger: {
+    error(code, metadata) { console.error('[NextAuth]', code, metadata) },
+    warn(code)            { console.warn('[NextAuth]', code) },
+  },
 }
 
-// v4 export pattern
 const nextAuthResult = NextAuth(authOptions)
 export const handlers = nextAuthResult
 export const { auth, signIn, signOut } = nextAuthResult as any
