@@ -1,5 +1,8 @@
-import NextAuth from 'next-auth'
-import Credentials from 'next-auth/providers/credentials'
+// Court IQ — NextAuth v4 config
+// next-auth v5 beta has a broken ESM import (next/server without .js extension)
+// that crashes under Node strict ESM resolver. v4 is stable + fully compatible.
+import NextAuth, { type NextAuthOptions } from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
 import { z } from 'zod'
 
 const Schema = z.object({
@@ -7,24 +10,11 @@ const Schema = z.object({
   idToken: z.string().min(10),
 })
 
-// Guard broken localStorage stub from --localstorage-file Node flag
-if (typeof globalThis !== 'undefined') {
-  const ls = (globalThis as any).localStorage
-  if (!ls || typeof ls.getItem !== 'function') {
-    ;(globalThis as any).localStorage = {
-      getItem: () => null, setItem: () => {},
-      removeItem: () => {}, clear: () => {},
-      length: 0, key: () => null,
-    }
-  }
-}
-
-export const { handlers, signIn, signOut, auth } = NextAuth({
-  trustHost: true,
-  secret: process.env.AUTH_SECRET ?? 'court-iq-dev-secret-change-in-production',
+export const authOptions: NextAuthOptions = {
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? 'court-iq-dev-secret',
 
   providers: [
-    Credentials({
+    CredentialsProvider({
       name: 'Phone OTP',
       credentials: {
         phone:   { label: 'Phone',          type: 'tel'  },
@@ -36,25 +26,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const { phone, idToken } = parsed.data
 
-        // Verify Firebase token using firebase-admin directly
-        // firebase-admin must be in serverExternalPackages so it's not bundled
+        // Verify Firebase ID token server-side
         try {
           const { getApps, initializeApp, cert } = await import('firebase-admin/app')
           const { getAuth } = await import('firebase-admin/auth')
 
-          const adminApp = getApps().length > 0
-            ? getApps()[0]
-            : initializeApp({
-                credential: cert({
-                  projectId:   process.env.FIREBASE_PROJECT_ID!,
-                  clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-                  privateKey:  process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
-                }),
-              })
+          const adminApp =
+            getApps().length > 0
+              ? getApps()[0]
+              : initializeApp({
+                  credential: cert({
+                    projectId:   process.env.FIREBASE_PROJECT_ID!,
+                    clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
+                    privateKey:  process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+                  }),
+                })
 
           const decoded = await getAuth(adminApp).verifyIdToken(idToken)
           if (decoded.phone_number !== phone) {
-            console.error('[Court IQ] Phone mismatch in token')
+            console.error('[Court IQ] Token phone mismatch:', decoded.phone_number, '!==', phone)
             return null
           }
         } catch (e: any) {
@@ -62,7 +52,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
-        // Upsert in DB if available
+        // Upsert user in DB if available
         if (process.env.DATABASE_URL) {
           try {
             const { userRepository } = await import('@court-iq/db')
@@ -70,15 +60,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return {
               id:    user.id,
               phone: user.phone,
-              name:  user.name ?? undefined,
+              name:  user.name ?? '',
               role:  user.role,
             }
           } catch (e) {
-            console.error('[Court IQ] DB upsert failed, falling back to dev user:', e)
+            console.error('[Court IQ] DB upsert failed, using dev fallback:', e)
           }
         }
 
-        // Dev fallback — no DB required
+        // Dev fallback — works without a database
         return {
           id:    `firebase-${phone}`,
           phone,
@@ -99,8 +89,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return token
     },
     async session({ session, token }) {
-      if (token && session.user) {
-        session.user.id          = token.id as string
+      if (session.user) {
+        session.user.id           = token.id as string
         ;(session.user as any).phone = token.phone
         ;(session.user as any).role  = token.role
       }
@@ -110,4 +100,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
   pages:   { signIn: '/login' },
   session: { strategy: 'jwt' },
-})
+}
+
+// v4 export pattern
+const nextAuthResult = NextAuth(authOptions)
+export const handlers = nextAuthResult
+export const { auth, signIn, signOut } = nextAuthResult as any
