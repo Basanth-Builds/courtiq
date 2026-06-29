@@ -6,11 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import {
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  ConfirmationResult,
-} from 'firebase/auth'
+import type { ConfirmationResult } from 'firebase/auth'
 import { ArrowRight, RotateCcw, ChevronDown, Check, Shield } from 'lucide-react'
 
 // ── Country list ────────────────────────────────────────────
@@ -33,109 +29,107 @@ const COUNTRIES = [
 ]
 const DEFAULT_COUNTRY = COUNTRIES[0]
 
-// ── Schemas ────────────────────────────────────────────────
 const phoneSchema = z.object({ phone: z.string().min(6, 'Enter a valid number') })
 const otpSchema   = z.object({ otp: z.string().length(6, 'Enter the 6-digit code') })
 type Step = 'phone' | 'otp'
 
 export function PhoneAuthForm() {
-  const [step, setStep]                   = useState<Step>('phone')
-  const [fullPhone, setFullPhone]         = useState('')
-  const [loading, setLoading]             = useState(false)
-  const [error, setError]                 = useState<string | null>(null)
-  const [country, setCountry]             = useState(DEFAULT_COUNTRY)
-  const [dropOpen, setDropOpen]           = useState(false)
-  const [search, setSearch]               = useState('')
-  const [detecting, setDetecting]         = useState(true)
-  const confirmationRef                   = useRef<ConfirmationResult | null>(null)
-  const recaptchaRef                      = useRef<RecaptchaVerifier | null>(null)
+  const [step, setStep]           = useState<Step>('phone')
+  const [fullPhone, setFullPhone] = useState('')
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState<string | null>(null)
+  const [country, setCountry]     = useState(DEFAULT_COUNTRY)
+  const [dropOpen, setDropOpen]   = useState(false)
+  const [search, setSearch]       = useState('')
+  const [detecting, setDetecting] = useState(true)
+  const confirmationRef           = useRef<ConfirmationResult | null>(null)
   const router = useRouter()
 
   const phoneForm = useForm<{ phone: string }>({ resolver: zodResolver(phoneSchema) })
   const otpForm   = useForm<{ otp: string }>({ resolver: zodResolver(otpSchema) })
 
-  // Auto-detect country
+  // Auto-detect country on mount
   useEffect(() => {
-    async function detect() {
-      try {
-        const res  = await fetch('https://ipapi.co/json/')
-        const data = await res.json() as { country_code?: string }
-        const found = COUNTRIES.find(c => c.code === data.country_code)
+    let cancelled = false
+    fetch('https://ipapi.co/json/')
+      .then(r => r.json())
+      .then((d: { country_code?: string }) => {
+        if (cancelled) return
+        const found = COUNTRIES.find(c => c.code === d.country_code)
         if (found) setCountry(found)
-      } catch { /* fall back to US */ }
-      finally { setDetecting(false) }
-    }
-    detect()
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setDetecting(false) })
+    return () => { cancelled = true }
   }, [])
-
-  // Init invisible reCAPTCHA (required by Firebase Phone Auth)
-  function ensureRecaptcha() {
-    if (recaptchaRef.current) return recaptchaRef.current
-    const { firebaseAuth } = require('@/lib/firebase-client')
-    const verifier = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
-      size: 'invisible',
-    })
-    recaptchaRef.current = verifier
-    return verifier
-  }
 
   const filtered = COUNTRIES.filter(
     c => c.name.toLowerCase().includes(search.toLowerCase()) || c.dial.includes(search)
   )
 
-  // ── Step 1: Send OTP via Firebase ────────────────────────
+  // ── Step 1: send OTP ──────────────────────────────────────
   async function onPhoneSubmit(data: { phone: string }) {
     setLoading(true)
     setError(null)
     try {
       const phone = `${country.dial}${data.phone.replace(/^0+/, '')}`
-      const { firebaseAuth } = await import('@/lib/firebase-client')
-      const verifier = ensureRecaptcha()
-      const confirmation = await signInWithPhoneNumber(firebaseAuth, phone, verifier)
+      const { signInWithPhoneNumber } = await import('firebase/auth')
+      const { getRecaptchaVerifier }  = await import('@/lib/recaptcha-verifier')
+
+      const verifier = await getRecaptchaVerifier()
+      const confirmation = await signInWithPhoneNumber(
+        (await import('@/lib/firebase-client')).firebaseAuth,
+        phone,
+        verifier,
+      )
       confirmationRef.current = confirmation
       setFullPhone(phone)
       setStep('otp')
     } catch (e: any) {
-      console.error(e)
-      // Reset reCAPTCHA on error so user can retry
-      recaptchaRef.current?.clear()
-      recaptchaRef.current = null
-      setError(e?.message ?? 'Failed to send code. Check the number and try again.')
+      // Clear the singleton so the user can retry cleanly
+      const { clearRecaptchaVerifier } = await import('@/lib/recaptcha-verifier')
+      clearRecaptchaVerifier()
+
+      const msg: Record<string, string> = {
+        'auth/operation-not-allowed': 'SMS not enabled yet. Enable Phone auth in Firebase Console → Authentication → Sign-in method.',
+        'auth/invalid-phone-number':  'Invalid phone number. Include the country code.',
+        'auth/too-many-requests':     'Too many attempts. Wait a moment and try again.',
+        'auth/captcha-check-failed':  'reCAPTCHA failed. Reload the page and retry.',
+      }
+      setError(msg[e?.code] ?? e?.message ?? 'Failed to send code.')
     } finally {
       setLoading(false)
     }
   }
 
-  // ── Step 2: Verify OTP → get Firebase ID token → NextAuth session ─
+  // ── Step 2: verify OTP → NextAuth session ─────────────────
   async function onOtpSubmit(data: { otp: string }) {
     setLoading(true)
     setError(null)
     try {
       if (!confirmationRef.current) throw new Error('Session expired. Go back and resend.')
 
-      // Confirm OTP with Firebase — this verifies the code
       const result  = await confirmationRef.current.confirm(data.otp)
       const idToken = await result.user.getIdToken()
 
-      // Verify token server-side and sign into NextAuth
       const verifyRes = await fetch('/api/auth/verify-firebase-token', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ idToken }),
+        body: JSON.stringify({ idToken }),
       })
       if (!verifyRes.ok) throw new Error('Token verification failed')
       const { phone } = await verifyRes.json() as { phone: string }
 
-      const signInResult = await signIn('credentials', {
-        phone,
-        idToken,
-        redirect: false,
-      })
+      const signInResult = await signIn('credentials', { phone, idToken, redirect: false })
       if (signInResult?.error) throw new Error(signInResult.error)
 
       router.push('/dashboard')
     } catch (e: any) {
-      setError(e?.message ?? 'Invalid code. Try again.')
+      const msg: Record<string, string> = {
+        'auth/invalid-verification-code': 'Wrong code. Check the SMS and try again.',
+        'auth/code-expired':              'Code expired. Go back and request a new one.',
+      }
+      setError(msg[e?.code] ?? e?.message ?? 'Verification failed.')
     } finally {
       setLoading(false)
     }
@@ -144,9 +138,6 @@ export function PhoneAuthForm() {
   // ── Phone step UI ───────────────────────────────────────
   if (step === 'phone') return (
     <div className="space-y-5">
-      {/* Invisible reCAPTCHA anchor */}
-      <div id="recaptcha-container" />
-
       <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-4">
         <div>
           <label className="text-sm text-foreground-muted mb-2 block">Phone number</label>
@@ -217,7 +208,11 @@ export function PhoneAuthForm() {
           )}
         </div>
 
-        {error && <p className="text-destructive text-sm">{error}</p>}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3">
+            <p className="text-destructive text-sm">{error}</p>
+          </div>
+        )}
 
         <button
           type="submit"
@@ -265,7 +260,11 @@ export function PhoneAuthForm() {
           )}
         </div>
 
-        {error && <p className="text-destructive text-sm">{error}</p>}
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3">
+            <p className="text-destructive text-sm">{error}</p>
+          </div>
+        )}
 
         <button
           type="submit"
