@@ -5,23 +5,23 @@ if (typeof globalThis !== 'undefined') {
   const ls = (globalThis as any).localStorage
   if (!ls || typeof ls?.getItem !== 'function') {
     ;(globalThis as any).localStorage = {
-      getItem: () => null,
-      setItem: () => {},
-      removeItem: () => {},
-      clear: () => {},
-      length: 0,
-      key: () => null,
+      getItem: () => null, setItem: () => {}, removeItem: () => {},
+      clear: () => {}, length: 0, key: () => null,
     }
   }
 }
 
 const nextConfig: NextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['@court-iq/auth', 'next-auth'],
-  },
-  // Explicitly tell Next.js the app root is src/
-  // This prevents the ghost apps/web/app/ directory from being scanned
-  // as a second App Router root causing duplicate route conflicts
+  // Keep firebase-admin, next-auth, and prisma server-side only — never bundled into client
+  serverExternalPackages: [
+    'firebase-admin',
+    'firebase-admin/app',
+    'firebase-admin/auth',
+    'next-auth',
+    '@court-iq/auth',
+    '@court-iq/db',
+    '@prisma/client',
+  ],
   distDir: '.next',
   images: {
     remotePatterns: [
