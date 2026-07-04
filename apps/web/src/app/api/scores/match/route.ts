@@ -3,7 +3,6 @@ import { updateMatch } from '@/lib/store'
 import * as D1Store from '@/lib/d1-store'
 import { verifyAdminToken } from '@/lib/admin-auth'
 
-export const runtime = 'edge'
 
 // Type for the environment bindings
 interface Env {
