@@ -1,36 +1,40 @@
-# Dependencies
-node_modules
-.pnp
+# dependencies
+/node_modules
+/.pnp
 .pnp.js
 
-# Build outputs
-.next
-dist
-out
-build
+# testing
+/coverage
 
-# Cloudflare
-.wrangler
+# next.js
+/.next/
+/out/
+.open-next/
 
-# Environment
-.env
-.env.local
-.env.*.local
+# production
+/build
 
-# Turbo
-.turbo
-
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-
-# OS
+# misc
 .DS_Store
-Thumbs.db
+*.pem
+.backup/
 
-# Logs
-*.log
+# debug
 npm-debug.log*
-pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+.env
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# wrangler
+.wrangler/
+wrangler.toml.bak

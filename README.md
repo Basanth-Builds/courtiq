@@ -1,60 +1,17 @@
-# Court IQ 🏓
+# CourtIQ - Simple Pickleball Tournament System 🏐
 
-> **Score it live. Run it smart.**
+A production-ready pickleball tournament management system built with Next.js and Cloudflare D1.
 
-Court IQ is a production-grade tournament management platform built for pickleball — automating score entry, pool seeding, playoff draws, and DUPR submission from a single smart interface.
+## 🎯 Features
 
-## ⚡ Quick Start: Production-Ready Spectator + Admin Portal
+- **Public Spectator View** - Real-time tournament scores and standings
+- **Admin Dashboard** - Update pools, matches, teams, and scores
+- **Multi-Game Scoring** - Best-of-3 games (11 points, win by 2)
+- **Court Management** - Track 4 courts with real-time status
+- **Pool Management** - Organizers can add/edit pools and teams
+- **Secure Admin Access** - Password-protected organizer portal
 
-The app is **production-ready** with two main portals:
-- **Public Spectator View** (`/`) - Read-only live scores for all matches
-- **Protected Admin Portal** (`/admin`) - Secure dashboard for organizers to update scores
-
-### Features
-
-✅ Public spectator page showing all categories, pools, matches, and final scores  
-✅ Protected admin dashboard with server-side authentication  
-✅ Secure login flow with HTTP-only cookies  
-✅ Real-time updates with auto-refresh  
-✅ Cloudflare Pages ready with OpenNext adapter  
-
-### Environment Setup
-
-**Required:**
-```bash
-ADMIN_PASSWORD=your_strong_password_here  # Generate: openssl rand -base64 32
-```
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for Cloudflare Pages setup instructions.
-
----
-
-## Stack
-
-| Layer | Technology |
-|-------|------------|
-| Framework | Next.js 15 (App Router) |
-| Hosting | Cloudflare Pages + Workers |
-| Auth | Phone OTP via Twilio Verify + Admin password auth |
-| UI | shadcn/ui + Tailwind CSS v4 |
-| Database | PostgreSQL + Prisma (optional, in-memory store for MVP) |
-| Monorepo | Turborepo + pnpm |
-| Jobs | Cloudflare Workers |
-
-## Apps & Packages
-
-| Package | Description |
-|---------|-------------|
-| `apps/web` | Main Next.js web application |
-| `apps/worker` | Cloudflare Worker for background jobs |
-| `packages/ui` | Shared shadcn/ui component system |
-| `packages/core` | Tournament engine, seeding, bracket logic |
-| `packages/db` | Prisma schema + data access layer |
-| `packages/auth` | Phone OTP + RBAC |
-| `packages/types` | Shared TypeScript types |
-| `packages/config` | Shared ESLint, TS, Tailwind configs |
-
-## Getting Started
+## 🚀 Quick Start
 
 ### Local Development
 
@@ -62,77 +19,124 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for Cloudflare Pages setup instructions.
 # Install dependencies
 pnpm install
 
-# Set up environment
-cp apps/web/.env.local.example apps/web/.env.local
-# Edit .env.local and set ADMIN_PASSWORD
+# Run development server
+pnpm run dev
 
-# Run dev server
-pnpm dev
+# Open http://localhost:3000
 ```
 
-**Access:**
-- Spectator view: http://localhost:3000
-- Admin panel: http://localhost:3000/admin
-
-### With Database (Optional)
+### Build & Deploy
 
 ```bash
-# Copy env file
-cp .env.example .env
+# Type check
+pnpm run typecheck
 
-# Generate Prisma client
-pnpm db:generate
+# Build
+pnpm run build
 
-# Run migrations
-pnpm db:migrate
-
-# Seed sample data
-pnpm db:seed
+# Deploy to Cloudflare
+pnpm run deploy
 ```
 
-## Routes
-
-| Route | Access | Description |
-|-------|--------|-------------|
-| `/` | Public | Spectator view with live scores |
-| `/admin` | Protected | Admin dashboard for score updates |
-| `/admin/login` | Public | Admin login page |
-
-## Deployment
-
-### Cloudflare Pages
+## 📁 Project Structure
 
 ```
-Build command: pnpm build
-Build output directory: .open-next
-Root directory: apps/web
+courtiq/
+├── src/
+│   ├── app/              # Next.js App Router
+│   │   ├── page.tsx      # Public spectator view
+│   │   ├── admin/        # Admin dashboard
+│   │   └── api/          # API routes
+│   ├── components/       # React components
+│   └── lib/              # Utilities, auth, database
+├── db/
+│   ├── schema.sql        # D1 database schema
+│   └── seed.sql          # Initial tournament data
+├── wrangler.toml         # Cloudflare configuration
+├── package.json          # Dependencies
+└── next.config.ts        # Next.js configuration
 ```
 
-**Environment Variables:**
-- `ADMIN_PASSWORD` (required) - Strong password for admin access
+## 🗄️ Database Setup (Cloudflare D1)
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed setup.
+```bash
+# 1. Create D1 database
+wrangler d1 create courtiq-db
 
-### Data Persistence
+# 2. Update wrangler.toml with database ID
 
-Current: In-memory store (suitable for single-tournament sessions)  
-Upgrades: Cloudflare KV, D1, or Supabase
+# 3. Initialize schema
+wrangler d1 execute courtiq-db --remote --file=./db/schema.sql
 
-See [PERSISTENCE.md](./PERSISTENCE.md) for options.
+# 4. Seed data
+wrangler d1 execute courtiq-db --remote --file=./db/seed.sql
 
-## Branches
+# 5. Verify
+wrangler d1 execute courtiq-db --remote --command "SELECT * FROM tournaments;"
+```
 
-| Branch | Purpose |
-|--------|----------|
-| `main` | Production |
-| `staging` | Demo & testing |
-| `dev` | Active development |
+## ☁️ Cloudflare Pages Deployment
 
-## Documentation
+### Auto-Deploy (Recommended)
 
-- [DEPLOYMENT.md](./DEPLOYMENT.md) - Cloudflare Pages deployment guide
-- [PERSISTENCE.md](./PERSISTENCE.md) - Data storage options
+1. Go to Cloudflare Dashboard → Workers & Pages
+2. Create application → Pages → Connect to Git
+3. Select repository: `Basanth-Builds/courtiq`
+4. Branch: `simplified`
+5. Build settings:
+   - Framework: Next.js
+   - Build command: `pnpm run build`
+   - Build output: `.next`
+6. Deploy → Auto-deploys on every push!
 
-## License
+### Manual Deploy
 
-Private — Court IQ © 2026
+```bash
+pnpm run deploy
+```
+
+## 🔑 Admin Access
+
+- **URL**: `/admin/login`
+- **Password**: `D!nk$`
+
+## 🎪 Tournament Configuration
+
+Edit in `src/lib/tournament-data.ts`:
+
+- Tournament name: Dink Syndicate Tournament
+- Date: July 5, 2026
+- Venue: Picklers' Hub - Visakhpatnam
+- Categories: Open Singles, Open Doubles, Openb Doubles 3.8
+
+## 📊 Tech Stack
+
+- **Frontend**: Next.js 15 + React 19
+- **Styling**: Tailwind CSS 4
+- **Database**: Cloudflare D1 (SQLite)
+- **Runtime**: Cloudflare Workers
+- **Deployment**: Cloudflare Pages
+
+## 📖 Documentation
+
+- [Simple Deployment Guide](./SIMPLE_DEPLOYMENT.md)
+- [Production Ready Checklist](./PRODUCTION_READY.md)
+
+## 🎉 Why Simplified?
+
+**Before**: Complex Turborepo monorepo with multiple packages  
+**After**: Simple standalone Next.js app
+
+- ✅ Single `package.json`
+- ✅ Simple commands: `pnpm build`, `pnpm deploy`
+- ✅ Direct Cloudflare deployment
+- ✅ No monorepo complexity
+- ✅ Easy to understand and maintain
+
+## 📝 License
+
+Private project for Dink Syndicate Tournament
+
+---
+
+**Ready for tournament day: July 5, 2026! 🎉**
