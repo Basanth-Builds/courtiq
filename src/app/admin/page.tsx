@@ -141,7 +141,7 @@ export default function AdminPage() {
 
   const handleSaveTeam = async () => {
     if (!editingTeam) return
-    
+
     try {
       const res = await fetch('/api/scores/team', {
         method: 'POST',
@@ -268,7 +268,7 @@ export default function AdminPage() {
             </button>
           </div>
         </div>
-        
+
         {/* Tab Navigation */}
         <div className="max-w-7xl mx-auto flex gap-2 mt-6">
           {[
@@ -350,9 +350,9 @@ export default function AdminPage() {
 
                   {/* Bracket Generator */}
                   <div className="mb-6">
-                    <BracketGenerator 
-                      categoryId={category.id} 
-                      categoryName={category.name} 
+                    <BracketGenerator
+                      categoryId={category.id}
+                      categoryName={category.name}
                     />
                   </div>
 

@@ -28,22 +28,22 @@ export async function POST(req: NextRequest) {
     if (env?.DB) {
       // Use D1 in production
       const poolId = `pool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      
+
       await env.DB
         .prepare('INSERT INTO pools (id, category_id, name) VALUES (?, ?, ?)')
         .bind(poolId, categoryId, poolName)
         .run()
 
-      return NextResponse.json({ 
-        success: true, 
-        pool: { id: poolId, categoryId, name: poolName } 
+      return NextResponse.json({
+        success: true,
+        pool: { id: poolId, categoryId, name: poolName }
       })
     }
 
     // In-memory store for development
     const { getTournamentStore } = await import('@/lib/store')
     const store = getTournamentStore()
-    
+
     // Find the category
     for (const tournament of store) {
       const category = tournament.categories.find(c => c.id === categoryId)
@@ -55,10 +55,10 @@ export async function POST(req: NextRequest) {
           matches: []
         }
         category.pools.push(newPool)
-        
-        return NextResponse.json({ 
-          success: true, 
-          pool: newPool 
+
+        return NextResponse.json({
+          success: true,
+          pool: newPool
         })
       }
     }
@@ -98,8 +98,8 @@ export async function DELETE(req: NextRequest) {
         .first<{ count: number }>()
 
       if (matches && matches.count > 0) {
-        return NextResponse.json({ 
-          error: 'Cannot delete pool with existing matches' 
+        return NextResponse.json({
+          error: 'Cannot delete pool with existing matches'
         }, { status: 400 })
       }
 
@@ -115,14 +115,14 @@ export async function DELETE(req: NextRequest) {
     // In-memory store for development
     const { getTournamentStore } = await import('@/lib/store')
     const store = getTournamentStore()
-    
+
     for (const tournament of store) {
       for (const category of tournament.categories) {
         const poolIndex = category.pools.findIndex(p => p.id === poolId)
         if (poolIndex !== -1) {
           if (category.pools[poolIndex].matches.length > 0) {
-            return NextResponse.json({ 
-              error: 'Cannot delete pool with existing matches' 
+            return NextResponse.json({
+              error: 'Cannot delete pool with existing matches'
             }, { status: 400 })
           }
           category.pools.splice(poolIndex, 1)
