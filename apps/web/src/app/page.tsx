@@ -44,12 +44,13 @@ export default function SpectatorPage() {
             Court <span className="text-[#A8D634]">IQ</span>
             <span className="ml-3 text-sm font-medium text-white/40">Live Scores</span>
           </h1>
-          <a
+          {/* Admin button hidden from public spectators */}
+          {/* <a
             href="/admin"
             className="text-xs px-3 py-1.5 rounded-full bg-[#A8D634]/20 text-[#A8D634] border border-[#A8D634]/30 hover:bg-[#A8D634]/30 transition-colors"
           >
             Admin Dashboard →
-          </a>
+          </a> */}
         </div>
       </header>
 

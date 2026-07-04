@@ -55,8 +55,8 @@ const DEMO_TOURNAMENT: TournamentData = {
   categories: [
     {
       id: 'cat_md35',
-      name: "Men's Doubles 3.5",
-      format: 'DOUBLES',
+      name: 'Open Singles',
+      format: 'SINGLES',
       pools: [
         {
           id: 'pool_md35_a',
@@ -156,7 +156,7 @@ const DEMO_TOURNAMENT: TournamentData = {
     },
     {
       id: 'cat_wd35',
-      name: "Women's Doubles 3.5",
+      name: 'Open Doubles',
       format: 'DOUBLES',
       pools: [
         {
@@ -211,8 +211,8 @@ const DEMO_TOURNAMENT: TournamentData = {
     },
     {
       id: 'cat_mx40',
-      name: 'Mixed Doubles 4.0',
-      format: 'MIXED_DOUBLES',
+      name: 'Open Doubles 3.8',
+      format: 'DOUBLES',
       pools: [
         {
           id: 'pool_mx40_a',
