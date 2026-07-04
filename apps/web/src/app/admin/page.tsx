@@ -280,38 +280,39 @@ export default function AdminPage() {
                           </div>
 
                           {/* Matches */}
-                        <div className="rounded-xl overflow-hidden border border-white/8 bg-[#0F1117]">
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="bg-[#242638] text-white/50 text-xs uppercase tracking-wider border-b border-white/8">
-                                  <th className="text-left px-4 py-3">Team 1</th>
-                                  <th className="text-left px-4 py-3">Team 2</th>
-                                  <th className="text-center px-4 py-3">Score</th>
-                                  <th className="text-center px-4 py-3">Court</th>
-                                  <th className="text-center px-4 py-3">Status</th>
-                                  <th className="text-center px-4 py-3">Action</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-white/8">
-                                {pool.matches.map((match) => (
-                                  <MatchRow
-                                    key={match.id}
-                                    match={match}
-                                    isEditing={editingMatch === match.id}
-                                    editValues={editValues}
-                                    onEdit={() => handleEditMatch(match)}
-                                    onSave={() => handleSaveMatch(match.id)}
-                                    onCancel={() => setEditingMatch(null)}
-                                    onEditValuesChange={setEditValues}
-                                  />
-                                ))}
-                              </tbody>
-                            </table>
+                          <div className="rounded-xl overflow-hidden border border-white/8 bg-[#0F1117]">
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="bg-[#242638] text-white/50 text-xs uppercase tracking-wider border-b border-white/8">
+                                    <th className="text-left px-4 py-3">Team 1</th>
+                                    <th className="text-left px-4 py-3">Team 2</th>
+                                    <th className="text-center px-4 py-3">Score</th>
+                                    <th className="text-center px-4 py-3">Court</th>
+                                    <th className="text-center px-4 py-3">Status</th>
+                                    <th className="text-center px-4 py-3">Action</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-white/8">
+                                  {pool.matches.map((match) => (
+                                    <MatchRow
+                                      key={match.id}
+                                      match={match}
+                                      isEditing={editingMatch === match.id}
+                                      editValues={editValues}
+                                      onEdit={() => handleEditMatch(match)}
+                                      onSave={() => handleSaveMatch(match.id)}
+                                      onCancel={() => setEditingMatch(null)}
+                                      onEditValuesChange={setEditValues}
+                                    />
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
 
                   {/* Playoffs */}
