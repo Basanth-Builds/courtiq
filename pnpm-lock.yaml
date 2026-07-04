@@ -64,7 +64,7 @@ importers:
         specifier: ^1.20.1
         version: 1.20.1(next@15.3.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(wrangler@3.114.17(@cloudflare/workers-types@4.20260702.1))
       '@tailwindcss/postcss':
-        specifier: ^4.3.1
+        specifier: ^4.3.2
         version: 4.3.2
       '@types/node':
         specifier: ^22.20.0
@@ -81,8 +81,11 @@ importers:
       eslint-config-next:
         specifier: 15.3.0
         version: 15.3.0(eslint@9.39.4(jiti@2.7.0))(typescript@5.9.3)
+      postcss:
+        specifier: ^8.5.16
+        version: 8.5.16
       tailwindcss:
-        specifier: ^4.3.1
+        specifier: ^4.3.2
         version: 4.3.2
       typescript:
         specifier: ^5.9.3
