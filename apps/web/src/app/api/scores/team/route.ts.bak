@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const env = (request as any).cloudflare?.env as Env | undefined
+    const env = (request as any).env as Env | undefined
     let success
 
     if (env?.DB) {

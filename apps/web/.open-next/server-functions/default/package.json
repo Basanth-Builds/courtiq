@@ -1,0 +1,21 @@
+{
+  "name": "court-iq",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "format": "prettier --write .",
+    "db:generate": "pnpm --filter @court-iq/db prisma generate",
+    "db:migrate": "pnpm --filter @court-iq/db prisma migrate dev",
+    "db:seed": "pnpm --filter @court-iq/db tsx prisma/seed.ts"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.6",
+    "turbo": "^2.1.3",
+    "typescript": "^5.5.4"
+  }
+}
