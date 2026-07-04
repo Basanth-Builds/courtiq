@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   try {
     // Get the environment (only available in Cloudflare Workers/Pages)
     const env = (req as any).env as Env | undefined
-    
+
     let success
 
     if (env?.DB) {
