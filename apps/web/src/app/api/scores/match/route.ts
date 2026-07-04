@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { updateMatch } from '@/lib/store'
-
-// Admin password - in production, use environment variable
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'
+import { verifyAdminToken } from '@/lib/admin-auth'
 
 export async function POST(req: NextRequest) {
-  const { matchId, updates, password } = await req.json()
+  // Verify admin authentication via cookie
+  const token = req.cookies.get('ciq_admin')?.value ?? ''
+  const isAuthenticated = token ? await verifyAdminToken(token) : false
 
-  // Verify admin password
-  if (password !== ADMIN_PASSWORD) {
-    return NextResponse.json({ error: 'Invalid password' }, { status: 401 })
+  if (!isAuthenticated) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const { matchId, updates } = await req.json()
 
   if (!matchId || !updates) {
     return NextResponse.json({ error: 'Missing matchId or updates' }, { status: 400 })

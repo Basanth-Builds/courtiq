@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { adminToken } from '@/lib/admin-auth'
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'D!nk$'
 
 export async function POST(req: NextRequest) {
   const { password } = await req.json()
@@ -10,7 +11,19 @@ export async function POST(req: NextRequest) {
   }
 
   if (password === ADMIN_PASSWORD) {
-    return NextResponse.json({ authenticated: true })
+    const token = await adminToken()
+    const response = NextResponse.json({ authenticated: true })
+    
+    // Set secure HTTP-only cookie
+    response.cookies.set('ciq_admin', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    })
+    
+    return response
   }
 
   return NextResponse.json({ authenticated: false }, { status: 401 })

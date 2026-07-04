@@ -1,23 +1,28 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { TournamentData, TournamentMatch } from '@/lib/tournament-data'
-import { Trophy, LogOut, Check, AlertCircle } from 'lucide-react'
+import { Trophy, LogOut, Check, X, AlertCircle } from 'lucide-react'
+
+type AdminState = 'login' | 'authenticated'
 
 export default function AdminPage() {
+  const [state, setState] = useState<AdminState>('login')
+  const [password, setPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
   const [tournaments, setTournaments] = useState<TournamentData[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [editingMatch, setEditingMatch] = useState<string | null>(null)
   const [editValues, setEditValues] = useState({ team1Score: 0, team2Score: 0, status: '', courtNumber: 0 })
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const router = useRouter()
 
   useEffect(() => {
-    fetchTournaments()
-    const interval = setInterval(fetchTournaments, 3000)
-    return () => clearInterval(interval)
-  }, [])
+    if (state === 'authenticated') {
+      fetchTournaments()
+      const interval = setInterval(fetchTournaments, 3000)
+      return () => clearInterval(interval)
+    }
+  }, [state])
 
   const fetchTournaments = async () => {
     try {
@@ -26,18 +31,39 @@ export default function AdminPage() {
       setTournaments(data.tournaments)
     } catch (error) {
       console.error('Failed to fetch:', error)
+    }
+  }
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setPasswordError('')
+
+    try {
+      const res = await fetch('/api/auth/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+
+      if (res.ok) {
+        setState('authenticated')
+        setPassword('')
+        fetchTournaments()
+      } else {
+        setPasswordError('Invalid password')
+      }
+    } catch (error) {
+      setPasswordError('Authentication failed')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' })
-      router.push('/admin/login')
-    } catch (error) {
-      console.error('Logout failed:', error)
-    }
+  const handleLogout = () => {
+    setState('login')
+    setPassword('')
+    setTournaments([])
   }
 
   const handleEditMatch = (match: TournamentMatch) => {
@@ -57,6 +83,7 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           matchId,
+          password,
           updates: {
             score: { team1: editValues.team1Score, team2: editValues.team2Score },
             status: editValues.status,
@@ -71,18 +98,51 @@ export default function AdminPage() {
         fetchTournaments()
         setTimeout(() => setSaveMessage(null), 3000)
       } else {
-        const data = await res.json()
-        setSaveMessage({ type: 'error', text: data.error || 'Failed to update match' })
+        setSaveMessage({ type: 'error', text: 'Failed to update match' })
       }
     } catch (error) {
       setSaveMessage({ type: 'error', text: 'Error saving match' })
     }
   }
 
-  if (loading) {
+  if (state === 'login') {
     return (
-      <div className="min-h-screen bg-[#1A1D2E] text-white flex items-center justify-center">
-        <p>Loading admin panel...</p>
+      <div className="min-h-screen bg-[#1A1D2E] text-white flex items-center justify-center px-6">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-black tracking-tight mb-2">
+              Court <span className="text-[#A8D634]">IQ</span>
+            </h1>
+            <p className="text-white/60">Admin Dashboard</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium mb-2">Admin Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  setPasswordError('')
+                }}
+                placeholder="Enter admin password"
+                className="w-full px-4 py-3 rounded-lg bg-[#242638] border border-white/10 text-white placeholder-white/30 focus:border-[#A8D634] focus:outline-none"
+              />
+              {passwordError && <p className="text-red-400 text-sm mt-2 flex items-center gap-1"><X className="w-3 h-3" /> {passwordError}</p>}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full px-6 py-3 rounded-lg bg-[#A8D634] text-[#1A1D2E] font-bold hover:bg-[#c4e86a] transition-all disabled:opacity-50"
+            >
+              {loading ? 'Verifying...' : 'Enter Admin Panel'}
+            </button>
+          </form>
+
+          <p className="text-center text-xs text-white/30 mt-6">Default password: admin123</p>
+        </div>
       </div>
     )
   }
@@ -115,15 +175,13 @@ export default function AdminPage() {
 
       {/* Save Message */}
       {saveMessage && (
-        <div className="max-w-7xl mx-auto px-6">
-          <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${
-            saveMessage.type === 'success'
-              ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-              : 'bg-red-500/20 text-red-400 border border-red-500/30'
-          }`}>
-            {saveMessage.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-            {saveMessage.text}
-          </div>
+        <div className={`mx-6 mt-4 p-3 rounded-lg flex items-center gap-2 ${
+          saveMessage.type === 'success'
+            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+            : 'bg-red-500/20 text-red-400 border border-red-500/30'
+        }`}>
+          {saveMessage.type === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {saveMessage.text}
         </div>
       )}
 
@@ -131,7 +189,7 @@ export default function AdminPage() {
         {tournaments.length === 0 ? (
           <div className="text-center py-20">
             <Trophy className="w-16 h-16 mx-auto text-white/20 mb-4" />
-            <p className="text-white/60">No tournaments found</p>
+            <p className="text-white/60">Loading tournaments...</p>
           </div>
         ) : (
           tournaments.map((tournament) => (
@@ -240,7 +298,6 @@ export default function AdminPage() {
   )
 }
 
-// Match row component for pool matches
 function MatchRow({
   match,
   isEditing,
@@ -256,64 +313,66 @@ function MatchRow({
   onEdit: () => void
   onSave: () => void
   onCancel: () => void
-  onEditValuesChange: (values: { team1Score: number; team2Score: number; status: string; courtNumber: number }) => void
+  onEditValuesChange: (values: any) => void
 }) {
   if (isEditing) {
     return (
-      <tr className="bg-[#1E2030]">
-        <td className="px-4 py-3 font-medium">{match.team1}</td>
-        <td className="px-4 py-3 text-white/70">{match.team2}</td>
-        <td className="px-4 py-3">
-          <div className="flex items-center justify-center gap-2">
-            <input
-              type="number"
-              value={editValues.team1Score}
-              onChange={(e) => onEditValuesChange({ ...editValues, team1Score: Number(e.target.value) })}
-              className="w-16 px-2 py-1 bg-[#1A1D2E] border border-white/10 rounded text-center"
-            />
-            <span>–</span>
-            <input
-              type="number"
-              value={editValues.team2Score}
-              onChange={(e) => onEditValuesChange({ ...editValues, team2Score: Number(e.target.value) })}
-              className="w-16 px-2 py-1 bg-[#1A1D2E] border border-white/10 rounded text-center"
-            />
-          </div>
-        </td>
-        <td className="px-4 py-3">
-          <input
-            type="number"
-            value={editValues.courtNumber}
-            onChange={(e) => onEditValuesChange({ ...editValues, courtNumber: Number(e.target.value) })}
-            className="w-20 px-2 py-1 bg-[#1A1D2E] border border-white/10 rounded text-center"
-            placeholder="Court"
-          />
-        </td>
-        <td className="px-4 py-3">
-          <select
-            value={editValues.status}
-            onChange={(e) => onEditValuesChange({ ...editValues, status: e.target.value })}
-            className="px-3 py-1 bg-[#1A1D2E] border border-white/10 rounded text-sm"
-          >
-            <option value="SCHEDULED">Scheduled</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="CONFIRMED">Confirmed</option>
-          </select>
-        </td>
-        <td className="px-4 py-3">
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={onSave}
-              className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded hover:bg-green-500/30 text-xs font-medium"
-            >
-              Save
-            </button>
-            <button
-              onClick={onCancel}
-              className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 text-xs font-medium"
-            >
-              Cancel
-            </button>
+      <tr className="bg-[#1E2030] border-l-2 border-[#A8D634]">
+        <td colSpan={6} className="px-4 py-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+            <div>
+              <label className="text-xs text-white/60 mb-1 block">Team 1 Score</label>
+              <input
+                type="number"
+                value={editValues.team1Score}
+                onChange={(e) => onEditValuesChange({ ...editValues, team1Score: Number(e.target.value) })}
+                className="w-full px-2 py-1 bg-[#0F1117] border border-white/20 rounded text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/60 mb-1 block">Team 2 Score</label>
+              <input
+                type="number"
+                value={editValues.team2Score}
+                onChange={(e) => onEditValuesChange({ ...editValues, team2Score: Number(e.target.value) })}
+                className="w-full px-2 py-1 bg-[#0F1117] border border-white/20 rounded text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/60 mb-1 block">Court #</label>
+              <input
+                type="number"
+                value={editValues.courtNumber}
+                onChange={(e) => onEditValuesChange({ ...editValues, courtNumber: Number(e.target.value) })}
+                className="w-full px-2 py-1 bg-[#0F1117] border border-white/20 rounded text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/60 mb-1 block">Status</label>
+              <select
+                value={editValues.status}
+                onChange={(e) => onEditValuesChange({ ...editValues, status: e.target.value })}
+                className="w-full px-2 py-1 bg-[#0F1117] border border-white/20 rounded text-white"
+              >
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="CONFIRMED">Confirmed</option>
+              </select>
+            </div>
+            <div className="flex gap-2 md:col-span-2 items-end">
+              <button
+                onClick={onSave}
+                className="flex-1 px-3 py-1 bg-green-600 hover:bg-green-700 rounded flex items-center justify-center gap-1"
+              >
+                <Check className="w-4 h-4" /> Save
+              </button>
+              <button
+                onClick={onCancel}
+                className="flex-1 px-3 py-1 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center gap-1"
+              >
+                <X className="w-4 h-4" /> Cancel
+              </button>
+            </div>
           </div>
         </td>
       </tr>
@@ -327,16 +386,12 @@ function MatchRow({
       <td className="px-4 py-3 text-center font-mono font-bold">
         {match.finalScore ? `${match.finalScore.team1} – ${match.finalScore.team2}` : '—'}
       </td>
-      <td className="px-4 py-3 text-center text-white/50">
-        {match.courtNumber ? `Court ${match.courtNumber}` : '—'}
-      </td>
-      <td className="px-4 py-3 text-center">
-        <StatusBadge status={match.status} />
-      </td>
+      <td className="px-4 py-3 text-center text-white/50">{match.courtNumber ? `Court ${match.courtNumber}` : '—'}</td>
+      <td className="px-4 py-3 text-center"><StatusBadge status={match.status} /></td>
       <td className="px-4 py-3 text-center">
         <button
           onClick={onEdit}
-          className="px-3 py-1 bg-[#A8D634]/20 text-[#A8D634] border border-[#A8D634]/30 rounded hover:bg-[#A8D634]/30 text-xs font-medium"
+          className="px-3 py-1 bg-[#A8D634]/20 text-[#A8D634] rounded hover:bg-[#A8D634]/30 transition-colors text-xs font-medium"
         >
           Edit
         </button>
@@ -345,7 +400,6 @@ function MatchRow({
   )
 }
 
-// Playoff match row component
 function PlayoffMatchRow({
   match,
   isEditing,
@@ -361,58 +415,57 @@ function PlayoffMatchRow({
   onEdit: () => void
   onSave: () => void
   onCancel: () => void
-  onEditValuesChange: (values: { team1Score: number; team2Score: number; status: string; courtNumber: number }) => void
+  onEditValuesChange: (values: any) => void
 }) {
   if (isEditing) {
     return (
-      <tr className="bg-[#1E2030]">
-        <td className="px-4 py-3 text-white/60 capitalize font-medium">
-          {match.stage.replace(/_/g, ' ')}
-        </td>
-        <td className="px-4 py-3 font-medium">{match.team1}</td>
-        <td className="px-4 py-3 text-white/70">{match.team2}</td>
-        <td className="px-4 py-3">
-          <div className="flex items-center justify-center gap-2">
-            <input
-              type="number"
-              value={editValues.team1Score}
-              onChange={(e) => onEditValuesChange({ ...editValues, team1Score: Number(e.target.value) })}
-              className="w-16 px-2 py-1 bg-[#1A1D2E] border border-white/10 rounded text-center"
-            />
-            <span>–</span>
-            <input
-              type="number"
-              value={editValues.team2Score}
-              onChange={(e) => onEditValuesChange({ ...editValues, team2Score: Number(e.target.value) })}
-              className="w-16 px-2 py-1 bg-[#1A1D2E] border border-white/10 rounded text-center"
-            />
-          </div>
-        </td>
-        <td className="px-4 py-3">
-          <select
-            value={editValues.status}
-            onChange={(e) => onEditValuesChange({ ...editValues, status: e.target.value })}
-            className="px-3 py-1 bg-[#1A1D2E] border border-white/10 rounded text-sm"
-          >
-            <option value="SCHEDULED">Scheduled</option>
-            <option value="IN_PROGRESS">In Progress</option>
-            <option value="CONFIRMED">Confirmed</option>
-          </select>
-        </td>
-        <td className="px-4 py-3">
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={onSave}
-              className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded hover:bg-green-500/30 text-xs font-medium"
-            >
-              Save
-            </button>
-            <button
-              onClick={onCancel}
-              className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 text-xs font-medium"
-            >
-              Cancel
-            </button>
+      <tr className="bg-[#1E2030] border-l-2 border-[#A8D634]">
+        <td colSpan={6} className="px-4 py-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+            <div>
+              <label className="text-xs text-white/60 mb-1 block">Team 1 Score</label>
+              <input
+                type="number"
+                value={editValues.team1Score}
+                onChange={(e) => onEditValuesChange({ ...editValues, team1Score: Number(e.target.value) })}
+                className="w-full px-2 py-1 bg-[#0F1117] border border-white/20 rounded text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/60 mb-1 block">Team 2 Score</label>
+              <input
+                type="number"
+                value={editValues.team2Score}
+                onChange={(e) => onEditValuesChange({ ...editValues, team2Score: Number(e.target.value) })}
+                className="w-full px-2 py-1 bg-[#0F1117] border border-white/20 rounded text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-white/60 mb-1 block">Status</label>
+              <select
+                value={editValues.status}
+                onChange={(e) => onEditValuesChange({ ...editValues, status: e.target.value })}
+                className="w-full px-2 py-1 bg-[#0F1117] border border-white/20 rounded text-white"
+              >
+                <option value="SCHEDULED">Scheduled</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="CONFIRMED">Confirmed</option>
+              </select>
+            </div>
+            <div className="flex gap-2 md:col-span-3 items-end">
+              <button
+                onClick={onSave}
+                className="flex-1 px-3 py-1 bg-green-600 hover:bg-green-700 rounded flex items-center justify-center gap-1"
+              >
+                <Check className="w-4 h-4" /> Save
+              </button>
+              <button
+                onClick={onCancel}
+                className="flex-1 px-3 py-1 bg-red-600 hover:bg-red-700 rounded flex items-center justify-center gap-1"
+              >
+                <X className="w-4 h-4" /> Cancel
+              </button>
+            </div>
           </div>
         </td>
       </tr>
@@ -421,21 +474,17 @@ function PlayoffMatchRow({
 
   return (
     <tr className="hover:bg-[#1E2030] transition-colors">
-      <td className="px-4 py-3 text-white/60 capitalize font-medium">
-        {match.stage.replace(/_/g, ' ')}
-      </td>
+      <td className="px-4 py-3 text-white/60 capitalize font-medium">{match.stage.replace(/_/g, ' ')}</td>
       <td className="px-4 py-3 font-medium">{match.team1}</td>
       <td className="px-4 py-3 text-white/70">{match.team2}</td>
       <td className="px-4 py-3 text-center font-mono font-bold">
         {match.finalScore ? `${match.finalScore.team1} – ${match.finalScore.team2}` : '—'}
       </td>
-      <td className="px-4 py-3 text-center">
-        <StatusBadge status={match.status} />
-      </td>
+      <td className="px-4 py-3 text-center"><StatusBadge status={match.status} /></td>
       <td className="px-4 py-3 text-center">
         <button
           onClick={onEdit}
-          className="px-3 py-1 bg-[#A8D634]/20 text-[#A8D634] border border-[#A8D634]/30 rounded hover:bg-[#A8D634]/30 text-xs font-medium"
+          className="px-3 py-1 bg-[#A8D634]/20 text-[#A8D634] rounded hover:bg-[#A8D634]/30 transition-colors text-xs font-medium"
         >
           Edit
         </button>
@@ -444,7 +493,6 @@ function PlayoffMatchRow({
   )
 }
 
-// Status badge component
 function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     CONFIRMED: 'bg-green-500/20 text-green-400 border-green-500/30',
@@ -453,11 +501,7 @@ function StatusBadge({ status }: { status: string }) {
   }
 
   return (
-    <span
-      className={`text-xs px-2 py-1 rounded-full border font-medium ${
-        styles[status] ?? 'bg-white/10 text-white/50 border-white/10'
-      }`}
-    >
+    <span className={`text-xs px-2 py-1 rounded-full border font-medium ${styles[status] ?? 'bg-white/10 text-white/50 border-white/10'}`}>
       {status}
     </span>
   )
