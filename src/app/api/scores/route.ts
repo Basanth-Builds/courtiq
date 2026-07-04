@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getTournamentStore } from '@/lib/store'
 import * as D1Store from '@/lib/d1-store'
@@ -13,7 +16,7 @@ export async function GET(request: Request) {
   try {
     // Get the environment (only available in Cloudflare Workers/Pages)
     const env = (request as any).cloudflare?.env as Env | undefined
-    
+
     let tournaments
 
     if (env?.DB) {
