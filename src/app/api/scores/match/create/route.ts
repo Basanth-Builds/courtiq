@@ -27,9 +27,9 @@ export async function POST(request: NextRequest) {
   try {
     // Check authentication
     const cookieStore = await cookies()
-    const authToken = cookieStore.get('admin_auth')
+    const authToken = cookieStore.get('ciq_admin')
 
-    if (!authToken || authToken.value !== 'true') {
+    if (!authToken || !authToken.value) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
