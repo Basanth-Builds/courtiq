@@ -251,6 +251,7 @@ export default function AdminPage() {
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setSaveMessage({ type, text })
+    setTimeout(() => setSaveMessage(null), 3000)
   }
 
   const tournament = tournaments[0]
