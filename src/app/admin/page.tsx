@@ -6,6 +6,7 @@ import { TournamentData, TournamentMatch, Pool } from '@/lib/tournament-data'
 import { calculatePoolStandings } from '@/lib/pool-standings'
 import { Trophy, LogOut, Check, AlertCircle, Edit2, MapPin, Clock } from 'lucide-react'
 import { CourtManagement } from '@/components/admin/CourtManagement'
+import { BracketGenerator } from '@/components/admin/BracketGenerator'
 
 type TabType = 'overview' | 'courts' | 'matches'
 
@@ -345,6 +346,14 @@ export default function AdminPage() {
                     >
                       + Add Pool
                     </button>
+                  </div>
+
+                  {/* Bracket Generator */}
+                  <div className="mb-6">
+                    <BracketGenerator 
+                      categoryId={category.id} 
+                      categoryName={category.name} 
+                    />
                   </div>
 
                   {/* Add Pool Form */}

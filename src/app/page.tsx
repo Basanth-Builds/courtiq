@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { TournamentData } from '@/lib/tournament-data'
 import { calculatePoolStandings } from '@/lib/pool-standings'
 import { Trophy, Award, Clock, Search, Filter, ChevronDown, TrendingUp } from 'lucide-react'
+import { BracketVisualizer } from '@/components/bracket/BracketVisualizer'
 
 export default function SpectatorPage() {
   const [tournaments, setTournaments] = useState<TournamentData[]>([])
@@ -338,55 +339,17 @@ export default function SpectatorPage() {
                   )
                 })}
 
-                {/* Playoffs Section */}
+                {/* Playoffs Section - Bracket Visualizer */}
                 {activeCateg.playoffMatches.length > 0 && (
-                  <div className="rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-[#1A1D2E]/80 to-[#0F1117]/80 backdrop-blur-sm">
+                  <div className="mt-8 rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-br from-[#1A1D2E]/80 to-[#0F1117]/80 backdrop-blur-sm">
                     <div className="px-4 md:px-6 py-3 md:py-4 bg-[#1A1D2E]/60 border-b border-white/8">
                       <h4 className="text-base md:text-lg font-bold text-[#A8D634] flex items-center gap-2">
                         <Award className="w-5 h-5" />
-                        Playoffs
+                        Playoffs Bracket
                       </h4>
                     </div>
-                    <div className="p-4 md:p-6 space-y-3">
-                      {activeCateg.playoffMatches.map((match) => (
-                        <div
-                          key={match.id}
-                          className="rounded-xl p-3 md:p-4 bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all"
-                        >
-                          <div className="flex items-center justify-between gap-3 mb-3">
-                            <span className="text-xs font-semibold text-[#A8D634] uppercase tracking-wider">
-                              {match.stage.replace(/_/g, ' ')}
-                            </span>
-                            <StatusBadge status={match.status} />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-sm md:text-base">{match.team1}</span>
-                              {match.finalScore && (
-                                <span className={`text-lg md:text-xl font-bold font-mono ${
-                                  match.finalScore.team1 > match.finalScore.team2 ? 'text-green-400' : 'text-white/50'
-                                }`}>
-                                  {match.finalScore.team1}
-                                </span>
-                              )}
-                            </div>
-                            
-                            <div className="h-px bg-white/10"></div>
-                            
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-sm md:text-base text-white/80">{match.team2}</span>
-                              {match.finalScore && (
-                                <span className={`text-lg md:text-xl font-bold font-mono ${
-                                  match.finalScore.team2 > match.finalScore.team1 ? 'text-green-400' : 'text-white/50'
-                                }`}>
-                                  {match.finalScore.team2}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="p-4 md:p-6">
+                      <BracketDisplay categoryId={activeCategory} />
                     </div>
                   </div>
                 )}
@@ -427,4 +390,46 @@ function StatusBadge({ status }: { status: string }) {
       {status.replace(/_/g, ' ')}
     </span>
   )
+}
+
+// Bracket Display Component
+function BracketDisplay({ categoryId }: { categoryId: string }) {
+  const [bracket, setBracket] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchBracket = async () => {
+      try {
+        const res = await fetch(`/api/brackets?categoryId=${categoryId}`)
+        const data = await res.json()
+        setBracket(data.bracket)
+      } catch (error) {
+        console.error('Failed to load bracket:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchBracket()
+  }, [categoryId])
+
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <div className="w-8 h-8 border-4 border-[#A8D634]/30 border-t-[#A8D634] rounded-full animate-spin mx-auto" />
+        <p className="text-white/40 text-sm mt-2">Loading bracket...</p>
+      </div>
+    )
+  }
+
+  if (!bracket || !bracket.columns || bracket.columns.length === 0) {
+    return (
+      <div className="text-center py-8 text-white/40">
+        <Trophy className="w-12 h-12 mx-auto mb-2 opacity-20" />
+        <p>No bracket generated yet</p>
+      </div>
+    )
+  }
+
+  return <BracketVisualizer columns={bracket.columns} thirdPlace={bracket.thirdPlace} />
 }
