@@ -4,7 +4,9 @@
 // ============================================================
 
 import { prisma } from '../client'
-import type { MatchStatus, ApprovalStatus, Role } from '@prisma/client'
+type MatchStatus = string
+type ApprovalStatus = string
+type Role = string
 
 export const matchRepository = {
   async findByTournament(tournamentId: string) {
@@ -44,7 +46,7 @@ export const matchRepository = {
     umpireId: string
   }) {
     const { matchId, team1Points, team2Points, isComplete, umpireId } = data
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       const score = await tx.matchScore.create({
         data: { matchId, team1Points, team2Points, isComplete, recordedById: umpireId },
       })
@@ -79,7 +81,7 @@ export const matchRepository = {
     note?: string
   }) {
     const { matchId, refereeId, duprEligible, duprExclusionReason, note } = data
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       const match = await tx.match.update({
         where: { id: matchId },
         data: {
@@ -118,7 +120,7 @@ export const matchRepository = {
     note: string
   }) {
     const { matchId, refereeId, note } = data
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: any) => {
       const match = await tx.match.update({
         where: { id: matchId },
         data: {

@@ -4,7 +4,8 @@
 // ============================================================
 
 import { prisma } from '../client'
-import type { ExportStatus } from '@prisma/client'
+// type ExportStatus = 'PENDING' | 'SUBMITTED' | 'FAILED' | string
+type ExportStatus = string
 
 export const duprRepository = {
   async createExport(data: {

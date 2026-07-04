@@ -4,7 +4,7 @@
 // ============================================================
 
 import { prisma } from '../client'
-import type { Role } from '@prisma/client'
+type Role = string
 
 export const userRepository = {
   async findByPhone(phone: string) {
