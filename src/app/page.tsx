@@ -5,46 +5,33 @@ import { TournamentData } from '@/lib/tournament-data'
 import { calculatePoolStandings } from '@/lib/pool-standings'
 import { Trophy, Award, Clock, Search, Filter, ChevronDown, TrendingUp } from 'lucide-react'
 import { BracketVisualizer } from '@/components/bracket/BracketVisualizer'
+import { useTournamentData } from '@/hooks/useTournamentData'
 
 export default function SpectatorPage() {
-  const [tournaments, setTournaments] = useState<TournamentData[]>([])
-  const [loading, setLoading] = useState(true)
+  const { tournaments, loading } = useTournamentData({
+    pollingInterval: 2000, // 2 seconds
+    refetchOnFocus: true,
+  })
+  
   const [activeCategory, setActiveCategory] = useState<string>('')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [expandedPools, setExpandedPools] = useState<Set<string>>(new Set())
 
+  // Auto-select first category and expand pools on data load
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch('/api/scores', { cache: 'no-store' })
-        const data = await res.json()
-        setTournaments(data.tournaments)
-        
-        // Auto-select first category on load
-        if (data.tournaments.length > 0 && !activeCategory) {
-          setActiveCategory(data.tournaments[0].categories[0]?.id || '')
-          // Expand all pools by default
-          const allPoolIds = new Set<string>()
-          data.tournaments[0].categories.forEach((cat: any) => {
-            cat.pools.forEach((pool: any) => {
-              allPoolIds.add(pool.id)
-            })
-          })
-          setExpandedPools(allPoolIds)
-        }
-      } catch (error) {
-        console.error('Failed to fetch scores:', error)
-      } finally {
-        setLoading(false)
-      }
+    if (tournaments.length > 0 && !activeCategory) {
+      setActiveCategory(tournaments[0].categories[0]?.id || '')
+      // Expand all pools by default
+      const allPoolIds = new Set<string>()
+      tournaments[0].categories.forEach((cat: any) => {
+        cat.pools.forEach((pool: any) => {
+          allPoolIds.add(pool.id)
+        })
+      })
+      setExpandedPools(allPoolIds)
     }
-
-    fetchData()
-    // Poll for updates every 2 seconds
-    const interval = setInterval(fetchData, 2000)
-    return () => clearInterval(interval)
-  }, [activeCategory])
+  }, [tournaments, activeCategory])
 
   const togglePool = (poolId: string) => {
     setExpandedPools(prev => {

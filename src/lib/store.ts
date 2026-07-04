@@ -1,6 +1,6 @@
 // Simple store with Cloudflare KV persistence fallback
 // In dev: uses in-memory store. In production: can use KV for persistence.
-import { TOURNAMENTS, TournamentData, TournamentMatch } from './tournament-data'
+import { TOURNAMENTS, TournamentData, TournamentMatch, Pool } from './tournament-data'
 import { Game, MatchWithGames } from './types-enhanced'
 
 type StoreData = typeof TOURNAMENTS
@@ -442,6 +442,69 @@ export function addTeamToPool(poolId: string, teamName: string) {
   }
 
   return false
+}
+
+export function createMatch(
+  poolId: string,
+  match: {
+    team1: string
+    team2: string
+    courtNumber?: number
+    status?: TournamentMatch['status']
+  }
+): TournamentMatch | null {
+  const updated = cloneData()
+
+  for (const tournament of updated) {
+    for (const category of tournament.categories) {
+      const pool = category.pools.find((p: any) => p.id === poolId)
+      if (pool) {
+        const newMatch: TournamentMatch = {
+          id: `${poolId}-match-${Date.now()}`,
+          team1: match.team1,
+          team2: match.team2,
+          stage: 'POOL',
+          poolId: poolId,
+          courtNumber: match.courtNumber,
+          status: match.status || 'SCHEDULED',
+        }
+
+        pool.matches.push(newMatch)
+        currentData = updated
+        
+        // Also create initial game for this match
+        const updatedAt = touch()
+        currentGames.push(createInitialGame(newMatch, updatedAt))
+        
+        return newMatch
+      }
+    }
+  }
+
+  return null
+}
+
+export function addPool(categoryId: string, poolName: string) {
+  const updated = cloneData()
+
+  for (const tournament of updated) {
+    const category = tournament.categories.find((c: any) => c.id === categoryId)
+    if (category) {
+      const newPool: Pool = {
+        id: `${categoryId}-pool-${Date.now()}`,
+        name: poolName,
+        categoryId: categoryId,
+        matches: [],
+      }
+
+      category.pools.push(newPool)
+      currentData = updated
+      touch()
+      return newPool
+    }
+  }
+
+  return null
 }
 
 export function reset() {
