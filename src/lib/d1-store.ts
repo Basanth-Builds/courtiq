@@ -265,3 +265,84 @@ export async function addTeamToPool(
 
   return true
 }
+
+// ─── Create match ───────────────────────────────────────────────────────────
+export async function createMatch(
+  db: D1Database,
+  poolId: string,
+  match: {
+    team1: string
+    team2: string
+    courtNumber?: number
+    status?: string
+  }
+): Promise<TournamentMatch | null> {
+  // Get pool info
+  const pool = await db.prepare('SELECT * FROM pools WHERE id = ?').bind(poolId).first<any>()
+
+  if (!pool) return null
+
+  // Get tournament_id and category_id from pool
+  const matchId = `${poolId}-match-${Date.now()}`
+
+  const result = await db
+    .prepare(
+      'INSERT INTO matches (id, tournament_id, category_id, pool_id, team1, team2, stage, status, court_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    )
+    .bind(
+      matchId,
+      pool.tournament_id,
+      pool.category_id,
+      poolId,
+      match.team1,
+      match.team2,
+      'POOL',
+      match.status || 'SCHEDULED',
+      match.courtNumber || null
+    )
+    .run()
+
+  if (!result.success) return null
+
+  return {
+    id: matchId,
+    team1: match.team1,
+    team2: match.team2,
+    stage: 'POOL',
+    poolId: poolId,
+    courtNumber: match.courtNumber,
+    status: (match.status as any) || 'SCHEDULED',
+  }
+}
+
+// ─── Add pool ───────────────────────────────────────────────────────────────
+export async function addPool(
+  db: D1Database,
+  categoryId: string,
+  poolName: string
+): Promise<Pool | null> {
+  // Get category info
+  const category = await db
+    .prepare('SELECT * FROM categories WHERE id = ?')
+    .bind(categoryId)
+    .first<any>()
+
+  if (!category) return null
+
+  const poolId = `${categoryId}-pool-${Date.now()}`
+
+  const result = await db
+    .prepare('INSERT INTO pools (id, category_id, tournament_id, name) VALUES (?, ?, ?, ?)')
+    .bind(poolId, categoryId, category.tournament_id, poolName)
+    .run()
+
+  if (!result.success) return null
+
+  return {
+    id: poolId,
+    name: poolName,
+    categoryId: categoryId,
+    matches: [],
+  }
+}
+
