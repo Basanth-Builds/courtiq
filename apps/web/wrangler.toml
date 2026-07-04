@@ -14,5 +14,5 @@ id = "YOUR_KV_NAMESPACE_ID"
 
 [[d1_databases]]
 binding = "DB"
-database_name = "court-iq"
-database_id = "YOUR_D1_DATABASE_ID"
+database_name = "courtiq-db"
+database_id = "YOUR_D1_DATABASE_ID"  # Replace with actual ID after running: wrangler d1 create courtiq-db
