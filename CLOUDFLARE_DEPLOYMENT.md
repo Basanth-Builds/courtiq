@@ -205,12 +205,18 @@ Open the spectator view in multiple browser tabs/devices:
 ## Step 9: Monitor and Debug
 
 ### 9.1 View Logs
+
+**From apps/web directory:**
 ```bash
+cd apps/web
 wrangler pages deployment tail
 ```
 
 ### 9.2 Check D1 Data
+
+**From apps/web directory:**
 ```bash
+cd apps/web
 wrangler d1 execute courtiq-db --command "SELECT COUNT(*) as match_count FROM matches;"
 ```
 
@@ -280,7 +286,11 @@ If something goes wrong:
 3. Click **...** → **Rollback to this deployment**
 
 ### Option 2: Emergency Database Reset
+
+**From apps/web directory:**
 ```bash
+cd apps/web
+
 # Clear all data
 wrangler d1 execute courtiq-db --command "DELETE FROM matches; DELETE FROM pools; DELETE FROM categories; DELETE FROM tournaments;"
 
@@ -319,8 +329,8 @@ For a tournament with 100 spectators refreshing every 2 seconds:
 ## Support
 
 If you encounter issues:
-1. Check Cloudflare Pages logs: `wrangler pages deployment tail`
-2. Verify D1 data: `wrangler d1 execute courtiq-db --command "SELECT * FROM tournaments;"`
+1. **Check Cloudflare Pages logs**: From `apps/web` run `wrangler pages deployment tail`
+2. **Verify D1 data**: From `apps/web` run `wrangler d1 execute courtiq-db --command "SELECT * FROM tournaments;"`
 3. Check environment variables in Cloudflare dashboard
 4. Review commit history for recent changes
 
