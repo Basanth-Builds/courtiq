@@ -3,7 +3,6 @@ import { updatePool } from '@/lib/store'
 import * as D1Store from '@/lib/d1-store'
 import { verifyAdminToken } from '@/lib/admin-auth'
 
-export const runtime = 'edge'
 
 interface Env {
   DB?: D1Store.D1Database

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getTournamentStore } from '@/lib/store'
 import * as D1Store from '@/lib/d1-store'
 
-export const runtime = 'edge'
 
 // Type for the environment bindings
 interface Env {
@@ -13,7 +12,7 @@ interface Env {
 export async function GET(request: Request) {
   try {
     // Get the environment (only available in Cloudflare Workers/Pages)
-    const env = (request as any).env as Env | undefined
+    const env = (request as any).cloudflare?.env as Env | undefined
     
     let tournaments
 
