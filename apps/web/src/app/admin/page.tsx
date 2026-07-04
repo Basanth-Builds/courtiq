@@ -17,6 +17,8 @@ export default function AdminPage() {
   const [teamName, setTeamName] = useState('')
   const [addingTeamToPool, setAddingTeamToPool] = useState<string | null>(null)
   const [newTeamName, setNewTeamName] = useState('')
+  const [addingPoolToCategory, setAddingPoolToCategory] = useState<string | null>(null)
+  const [newPoolName, setNewPoolName] = useState('')
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const router = useRouter()
 
@@ -181,6 +183,37 @@ export default function AdminPage() {
     }
   }
 
+  const handleAddPool = async (categoryId: string) => {
+    if (!newPoolName.trim()) {
+      setSaveMessage({ type: 'error', text: 'Pool name cannot be empty' })
+      setTimeout(() => setSaveMessage(null), 3000)
+      return
+    }
+
+    try {
+      const res = await fetch('/api/pools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoryId, poolName: newPoolName.trim() })
+      })
+
+      if (res.ok) {
+        setSaveMessage({ type: 'success', text: `Pool "${newPoolName}" added successfully!` })
+        setAddingPoolToCategory(null)
+        setNewPoolName('')
+        fetchTournaments()
+        setTimeout(() => setSaveMessage(null), 3000)
+      } else {
+        const error = await res.json()
+        setSaveMessage({ type: 'error', text: error.error || 'Failed to add pool' })
+        setTimeout(() => setSaveMessage(null), 3000)
+      }
+    } catch (error) {
+      setSaveMessage({ type: 'error', text: 'Failed to add pool' })
+      setTimeout(() => setSaveMessage(null), 3000)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#1A1D2E] text-white flex items-center justify-center">
@@ -251,7 +284,54 @@ export default function AdminPage() {
               {/* Categories */}
               {tournament.categories.map((category) => (
                 <div key={category.id} className="mb-12">
-                  <h3 className="text-xl font-bold text-[#A8D634] mb-6">{category.name}</h3>
+                  {/* Category Header with Add Pool Button */}
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold text-[#A8D634]">{category.name}</h3>
+                    <button
+                      onClick={() => {
+                        setAddingPoolToCategory(category.id)
+                        setNewPoolName('')
+                      }}
+                      className="px-4 py-2 bg-[#A8D634]/20 text-[#A8D634] border border-[#A8D634]/30 rounded hover:bg-[#A8D634]/30 text-sm font-medium transition-colors"
+                    >
+                      + Add Pool
+                    </button>
+                  </div>
+
+                  {/* Add Pool Form */}
+                  {addingPoolToCategory === category.id && (
+                    <div className="mb-6 p-4 bg-[#1A1D2E] border border-[#A8D634]/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="text"
+                          value={newPoolName}
+                          onChange={(e) => setNewPoolName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleAddPool(category.id)
+                            if (e.key === 'Escape') setAddingPoolToCategory(null)
+                          }}
+                          placeholder="Enter pool name (e.g., Pool C)"
+                          className="flex-1 px-4 py-2 bg-[#0F1117] border border-white/10 rounded text-white placeholder:text-white/40"
+                          autoFocus
+                        />
+                        <button
+                          onClick={() => handleAddPool(category.id)}
+                          className="px-4 py-2 bg-[#A8D634] text-[#1A1D2E] rounded hover:bg-[#96C12B] font-medium transition-colors"
+                        >
+                          Create Pool
+                        </button>
+                        <button
+                          onClick={() => {
+                            setAddingPoolToCategory(null)
+                            setNewPoolName('')
+                          }}
+                          className="px-4 py-2 bg-white/5 text-white/60 border border-white/10 rounded hover:bg-white/10 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Pools */}
                   <div className="space-y-6 mb-8">
