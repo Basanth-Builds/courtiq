@@ -47,11 +47,11 @@ export interface TournamentData {
 
 const DEMO_TOURNAMENT: TournamentData = {
   id: 'trn_demo',
-  slug: 'summer-open-2025',
-  name: 'Summer Open 2025',
-  venue: 'Pickleball Park — Austin, TX',
-  date: '2025-08-02',
-  status: 'COMPLETED',
+  slug: 'dink-syndicate-2026',
+  name: 'Dink Syndicate Tournament',
+  venue: "Picklers' Hub — Visakhpatnam",
+  date: '2026-07-05',
+  status: 'ACTIVE',
   categories: [
     {
       id: 'cat_md35',
