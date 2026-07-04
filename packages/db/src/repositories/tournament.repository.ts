@@ -4,7 +4,7 @@
 // ============================================================
 
 import { prisma } from '../client'
-import type { TournamentStatus } from '@prisma/client'
+type TournamentStatus = string
 
 export const tournamentRepository = {
   async findAll() {
