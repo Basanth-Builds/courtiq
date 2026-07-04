@@ -75,6 +75,72 @@ export function updatePool(
   return false
 }
 
+export function updateTeamName(
+  matchId: string,
+  team: 'team1' | 'team2',
+  newName: string
+) {
+  const updated = JSON.parse(JSON.stringify(currentData))
+
+  for (const tournament of updated) {
+    for (const category of tournament.categories) {
+      // Update in pool matches
+      for (const pool of category.pools) {
+        const match = pool.matches.find((m: any) => m.id === matchId)
+        if (match) {
+          match[team] = newName
+          currentData = updated
+          return true
+        }
+      }
+
+      // Update in playoff matches
+      const playoffMatch = category.playoffMatches.find((m: any) => m.id === matchId)
+      if (playoffMatch) {
+        playoffMatch[team] = newName
+        currentData = updated
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+export function addTeamToPool(poolId: string, teamName: string) {
+  const updated = JSON.parse(JSON.stringify(currentData))
+
+  for (const tournament of updated) {
+    for (const category of tournament.categories) {
+      const pool = category.pools.find((p: any) => p.id === poolId)
+      if (pool) {
+        // Get all existing teams in the pool
+        const existingTeams = new Set<string>()
+        pool.matches.forEach((match: any) => {
+          existingTeams.add(match.team1)
+          existingTeams.add(match.team2)
+        })
+
+        // Create matches between new team and all existing teams
+        const newMatches = Array.from(existingTeams).map((existingTeam, index) => ({
+          id: `${poolId}-match-${Date.now()}-${index}`,
+          team1: teamName,
+          team2: existingTeam,
+          stage: 'POOL' as const,
+          poolId: poolId,
+          status: 'SCHEDULED' as const,
+        }))
+
+        pool.matches.push(...newMatches)
+        currentData = updated
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
 export function reset() {
   currentData = JSON.parse(JSON.stringify(TOURNAMENTS))
 }

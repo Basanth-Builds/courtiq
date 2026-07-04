@@ -11,8 +11,12 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [editingMatch, setEditingMatch] = useState<string | null>(null)
   const [editingPool, setEditingPool] = useState<string | null>(null)
+  const [editingTeam, setEditingTeam] = useState<{ matchId: string; team: 'team1' | 'team2' } | null>(null)
   const [editValues, setEditValues] = useState({ team1Score: 0, team2Score: 0, status: '', courtNumber: 0 })
   const [poolName, setPoolName] = useState('')
+  const [teamName, setTeamName] = useState('')
+  const [addingTeamToPool, setAddingTeamToPool] = useState<string | null>(null)
+  const [newTeamName, setNewTeamName] = useState('')
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const router = useRouter()
 
@@ -109,6 +113,71 @@ export default function AdminPage() {
       }
     } catch (error) {
       setSaveMessage({ type: 'error', text: 'Error saving pool' })
+    }
+  }
+
+  const handleEditTeam = (matchId: string, team: 'team1' | 'team2', currentName: string) => {
+    setEditingTeam({ matchId, team })
+    setTeamName(currentName)
+  }
+
+  const handleSaveTeam = async () => {
+    if (!editingTeam) return
+    
+    try {
+      const res = await fetch('/api/scores/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          matchId: editingTeam.matchId,
+          team: editingTeam.team,
+          newName: teamName,
+        }),
+      })
+
+      if (res.ok) {
+        setSaveMessage({ type: 'success', text: 'Team name updated successfully!' })
+        setEditingTeam(null)
+        fetchTournaments()
+        setTimeout(() => setSaveMessage(null), 3000)
+      } else {
+        const data = await res.json()
+        setSaveMessage({ type: 'error', text: data.error || 'Failed to update team name' })
+      }
+    } catch (error) {
+      setSaveMessage({ type: 'error', text: 'Error saving team name' })
+    }
+  }
+
+  const handleAddTeam = async (poolId: string) => {
+    if (!newTeamName.trim()) {
+      setSaveMessage({ type: 'error', text: 'Team name cannot be empty' })
+      setTimeout(() => setSaveMessage(null), 3000)
+      return
+    }
+
+    try {
+      const res = await fetch('/api/scores/add-team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          poolId,
+          teamName: newTeamName.trim(),
+        }),
+      })
+
+      if (res.ok) {
+        setSaveMessage({ type: 'success', text: 'Team added successfully!' })
+        setAddingTeamToPool(null)
+        setNewTeamName('')
+        fetchTournaments()
+        setTimeout(() => setSaveMessage(null), 3000)
+      } else {
+        const data = await res.json()
+        setSaveMessage({ type: 'error', text: data.error || 'Failed to add team' })
+      }
+    } catch (error) {
+      setSaveMessage({ type: 'error', text: 'Error adding team' })
     }
   }
 
@@ -229,6 +298,44 @@ export default function AdminPage() {
                             )}
                           </div>
 
+                          {/* Add Team Button */}
+                          {addingTeamToPool === pool.id ? (
+                            <div className="mb-4 p-3 bg-[#0F1117] border border-white/8 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={newTeamName}
+                                  onChange={(e) => setNewTeamName(e.target.value)}
+                                  className="flex-1 px-3 py-2 bg-[#1A1D2E] border border-white/10 rounded text-sm text-white"
+                                  placeholder="Enter team name..."
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleAddTeam(pool.id)}
+                                  className="px-4 py-2 bg-green-500/20 text-green-400 border border-green-500/30 rounded hover:bg-green-500/30 text-xs font-medium"
+                                >
+                                  Add
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setAddingTeamToPool(null)
+                                    setNewTeamName('')
+                                  }}
+                                  className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 text-xs font-medium"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setAddingTeamToPool(pool.id)}
+                              className="mb-4 px-3 py-1.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded hover:bg-blue-500/30 text-xs font-medium"
+                            >
+                              + Add Team to Pool
+                            </button>
+                          )}
+
                           {/* Pool Standings */}
                           <div className="rounded-xl overflow-hidden border border-white/8 bg-[#0F1117] mb-4">
                             <div className="px-4 py-2 bg-[#1A1D2E] border-b border-white/8">
@@ -300,10 +407,16 @@ export default function AdminPage() {
                                       match={match}
                                       isEditing={editingMatch === match.id}
                                       editValues={editValues}
+                                      editingTeam={editingTeam}
+                                      teamName={teamName}
                                       onEdit={() => handleEditMatch(match)}
                                       onSave={() => handleSaveMatch(match.id)}
                                       onCancel={() => setEditingMatch(null)}
                                       onEditValuesChange={setEditValues}
+                                      onEditTeam={(team: 'team1' | 'team2', name: string) => handleEditTeam(match.id, team, name)}
+                                      onSaveTeam={handleSaveTeam}
+                                      onCancelTeam={() => setEditingTeam(null)}
+                                      onTeamNameChange={setTeamName}
                                     />
                                   ))}
                                 </tbody>
@@ -368,19 +481,34 @@ function MatchRow({
   match,
   isEditing,
   editValues,
+  editingTeam,
+  teamName,
   onEdit,
   onSave,
   onCancel,
   onEditValuesChange,
+  onEditTeam,
+  onSaveTeam,
+  onCancelTeam,
+  onTeamNameChange,
 }: {
   match: TournamentMatch
   isEditing: boolean
   editValues: { team1Score: number; team2Score: number; status: string; courtNumber: number }
+  editingTeam: { matchId: string; team: 'team1' | 'team2' } | null
+  teamName: string
   onEdit: () => void
   onSave: () => void
   onCancel: () => void
   onEditValuesChange: (values: { team1Score: number; team2Score: number; status: string; courtNumber: number }) => void
+  onEditTeam: (team: 'team1' | 'team2', name: string) => void
+  onSaveTeam: () => void
+  onCancelTeam: () => void
+  onTeamNameChange: (name: string) => void
 }) {
+  const isEditingTeam1 = editingTeam?.matchId === match.id && editingTeam?.team === 'team1'
+  const isEditingTeam2 = editingTeam?.matchId === match.id && editingTeam?.team === 'team2'
+
   if (isEditing) {
     return (
       <tr className="bg-[#1E2030]">
@@ -444,9 +572,79 @@ function MatchRow({
   }
 
   return (
-    <tr className="hover:bg-[#1E2030] transition-colors">
-      <td className="px-4 py-3 font-medium">{match.team1}</td>
-      <td className="px-4 py-3 text-white/70">{match.team2}</td>
+    <tr className="group hover:bg-[#1E2030] transition-colors">
+      <td className="px-4 py-3">
+        {isEditingTeam1 ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={teamName}
+              onChange={(e) => onTeamNameChange(e.target.value)}
+              className="flex-1 px-2 py-1 bg-[#1A1D2E] border border-white/10 rounded text-sm"
+              autoFocus
+            />
+            <button
+              onClick={onSaveTeam}
+              className="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs"
+            >
+              ✓
+            </button>
+            <button
+              onClick={onCancelTeam}
+              className="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{match.team1}</span>
+            <button
+              onClick={() => onEditTeam('team1', match.team1)}
+              className="opacity-0 group-hover:opacity-100 px-1.5 py-0.5 bg-white/5 hover:bg-white/10 rounded text-xs text-white/50"
+              title="Edit team name"
+            >
+              <Edit2 className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+      </td>
+      <td className="px-4 py-3">
+        {isEditingTeam2 ? (
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={teamName}
+              onChange={(e) => onTeamNameChange(e.target.value)}
+              className="flex-1 px-2 py-1 bg-[#1A1D2E] border border-white/10 rounded text-sm"
+              autoFocus
+            />
+            <button
+              onClick={onSaveTeam}
+              className="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs"
+            >
+              ✓
+            </button>
+            <button
+              onClick={onCancelTeam}
+              className="px-2 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <span className="text-white/70">{match.team2}</span>
+            <button
+              onClick={() => onEditTeam('team2', match.team2)}
+              className="opacity-0 group-hover:opacity-100 px-1.5 py-0.5 bg-white/5 hover:bg-white/10 rounded text-xs text-white/50"
+              title="Edit team name"
+            >
+              <Edit2 className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+      </td>
       <td className="px-4 py-3 text-center font-mono font-bold">
         {match.finalScore ? `${match.finalScore.team1} – ${match.finalScore.team2}` : '—'}
       </td>
