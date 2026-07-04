@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { TournamentData } from '@/lib/tournament-data'
+import { calculatePoolStandings } from '@/lib/pool-standings'
 import { Trophy, Award, Clock } from 'lucide-react'
 
 export default function SpectatorPage() {
@@ -94,12 +95,71 @@ export default function SpectatorPage() {
 
                   {/* Pools */}
                   <div className="space-y-6 mb-8">
-                    {category.pools.map((pool) => (
-                      <div key={pool.id}>
-                        <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">
-                          {pool.name}
-                        </h4>
-                        <div className="rounded-xl overflow-hidden border border-white/8 bg-[#0F1117]">
+                    {category.pools.map((pool) => {
+                      const standings = calculatePoolStandings(pool)
+                      return (
+                        <div key={pool.id}>
+                          <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">
+                            {pool.name}
+                          </h4>
+
+                          {/* Pool Standings */}
+                          <div className="rounded-xl overflow-hidden border border-white/8 bg-[#0F1117] mb-4">
+                            <div className="px-4 py-2 bg-[#1A1D2E] border-b border-white/8">
+                              <h5 className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                                Standings
+                              </h5>
+                            </div>
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="bg-[#242638] text-white/50 text-xs uppercase tracking-wider border-b border-white/8">
+                                  <th className="text-left px-4 py-2">Rank</th>
+                                  <th className="text-left px-4 py-2">Team</th>
+                                  <th className="text-center px-4 py-2">W</th>
+                                  <th className="text-center px-4 py-2">L</th>
+                                  <th className="text-center px-4 py-2">PF</th>
+                                  <th className="text-center px-4 py-2">PA</th>
+                                  <th className="text-center px-4 py-2">Diff</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/8">
+                                {standings.standings.map((standing, index) => (
+                                  <tr key={standing.teamName} className="hover:bg-[#1E2030] transition-colors">
+                                    <td className="px-4 py-2 text-white/50 font-mono">{index + 1}</td>
+                                    <td className="px-4 py-2 font-medium">{standing.teamName}</td>
+                                    <td className="px-4 py-2 text-center font-bold text-green-400">
+                                      {standing.wins}
+                                    </td>
+                                    <td className="px-4 py-2 text-center text-red-400">{standing.losses}</td>
+                                    <td className="px-4 py-2 text-center text-white/70">{standing.pointsFor}</td>
+                                    <td className="px-4 py-2 text-center text-white/70">
+                                      {standing.pointsAgainst}
+                                    </td>
+                                    <td
+                                      className={`px-4 py-2 text-center font-mono font-bold ${
+                                        standing.pointDifferential > 0
+                                          ? 'text-green-400'
+                                          : standing.pointDifferential < 0
+                                            ? 'text-red-400'
+                                            : 'text-white/50'
+                                      }`}
+                                    >
+                                      {standing.pointDifferential > 0 ? '+' : ''}
+                                      {standing.pointDifferential}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Matches */}
+                          <div className="rounded-xl overflow-hidden border border-white/8 bg-[#0F1117]">
+                            <div className="px-4 py-2 bg-[#1A1D2E] border-b border-white/8">
+                              <h5 className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                                Matches
+                              </h5>
+                            </div>
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="bg-[#242638] text-white/50 text-xs uppercase tracking-wider border-b border-white/8">
@@ -132,7 +192,8 @@ export default function SpectatorPage() {
                           </table>
                         </div>
                       </div>
-                    ))}
+                    )
+                    })}
                   </div>
 
                   {/* Playoffs */}

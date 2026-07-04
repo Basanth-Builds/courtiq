@@ -2,14 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { TournamentData, TournamentMatch } from '@/lib/tournament-data'
-import { Trophy, LogOut, Check, AlertCircle } from 'lucide-react'
+import { TournamentData, TournamentMatch, Pool } from '@/lib/tournament-data'
+import { calculatePoolStandings } from '@/lib/pool-standings'
+import { Trophy, LogOut, Check, AlertCircle, Edit2 } from 'lucide-react'
 
 export default function AdminPage() {
   const [tournaments, setTournaments] = useState<TournamentData[]>([])
   const [loading, setLoading] = useState(true)
   const [editingMatch, setEditingMatch] = useState<string | null>(null)
+  const [editingPool, setEditingPool] = useState<string | null>(null)
   const [editValues, setEditValues] = useState({ team1Score: 0, team2Score: 0, status: '', courtNumber: 0 })
+  const [poolName, setPoolName] = useState('')
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const router = useRouter()
 
@@ -76,6 +79,36 @@ export default function AdminPage() {
       }
     } catch (error) {
       setSaveMessage({ type: 'error', text: 'Error saving match' })
+    }
+  }
+
+  const handleEditPool = (pool: Pool) => {
+    setEditingPool(pool.id)
+    setPoolName(pool.name)
+  }
+
+  const handleSavePool = async (poolId: string) => {
+    try {
+      const res = await fetch('/api/scores/pool', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          poolId,
+          updates: { name: poolName },
+        }),
+      })
+
+      if (res.ok) {
+        setSaveMessage({ type: 'success', text: 'Pool name updated successfully!' })
+        setEditingPool(null)
+        fetchTournaments()
+        setTimeout(() => setSaveMessage(null), 3000)
+      } else {
+        const data = await res.json()
+        setSaveMessage({ type: 'error', text: data.error || 'Failed to update pool' })
+      }
+    } catch (error) {
+      setSaveMessage({ type: 'error', text: 'Error saving pool' })
     }
   }
 
@@ -153,11 +186,100 @@ export default function AdminPage() {
 
                   {/* Pools */}
                   <div className="space-y-6 mb-8">
-                    {category.pools.map((pool) => (
-                      <div key={pool.id}>
-                        <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider mb-3">
-                          {pool.name}
-                        </h4>
+                    {category.pools.map((pool) => {
+                      const standings = calculatePoolStandings(pool)
+                      return (
+                        <div key={pool.id}>
+                          {/* Pool Header with Edit */}
+                          <div className="flex items-center gap-3 mb-3">
+                            {editingPool === pool.id ? (
+                              <div className="flex items-center gap-2 flex-1">
+                                <input
+                                  type="text"
+                                  value={poolName}
+                                  onChange={(e) => setPoolName(e.target.value)}
+                                  className="px-3 py-1.5 bg-[#1A1D2E] border border-white/10 rounded text-sm font-semibold text-white"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleSavePool(pool.id)}
+                                  className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded hover:bg-green-500/30 text-xs font-medium"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingPool(null)}
+                                  className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 text-xs font-medium"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                <h4 className="text-sm font-semibold text-white/60 uppercase tracking-wider">
+                                  {pool.name}
+                                </h4>
+                                <button
+                                  onClick={() => handleEditPool(pool)}
+                                  className="px-2 py-1 bg-[#A8D634]/20 text-[#A8D634] border border-[#A8D634]/30 rounded hover:bg-[#A8D634]/30 text-xs font-medium flex items-center gap-1"
+                                >
+                                  <Edit2 className="w-3 h-3" /> Edit Name
+                                </button>
+                              </>
+                            )}
+                          </div>
+
+                          {/* Pool Standings */}
+                          <div className="rounded-xl overflow-hidden border border-white/8 bg-[#0F1117] mb-4">
+                            <div className="px-4 py-2 bg-[#1A1D2E] border-b border-white/8">
+                              <h5 className="text-xs font-semibold text-white/60 uppercase tracking-wider">
+                                Standings
+                              </h5>
+                            </div>
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="bg-[#242638] text-white/50 text-xs uppercase tracking-wider border-b border-white/8">
+                                  <th className="text-left px-4 py-2">Rank</th>
+                                  <th className="text-left px-4 py-2">Team</th>
+                                  <th className="text-center px-4 py-2">W</th>
+                                  <th className="text-center px-4 py-2">L</th>
+                                  <th className="text-center px-4 py-2">PF</th>
+                                  <th className="text-center px-4 py-2">PA</th>
+                                  <th className="text-center px-4 py-2">Diff</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-white/8">
+                                {standings.standings.map((standing, index) => (
+                                  <tr key={standing.teamName} className="hover:bg-[#1E2030] transition-colors">
+                                    <td className="px-4 py-2 text-white/50 font-mono">{index + 1}</td>
+                                    <td className="px-4 py-2 font-medium">{standing.teamName}</td>
+                                    <td className="px-4 py-2 text-center font-bold text-green-400">
+                                      {standing.wins}
+                                    </td>
+                                    <td className="px-4 py-2 text-center text-red-400">{standing.losses}</td>
+                                    <td className="px-4 py-2 text-center text-white/70">{standing.pointsFor}</td>
+                                    <td className="px-4 py-2 text-center text-white/70">
+                                      {standing.pointsAgainst}
+                                    </td>
+                                    <td
+                                      className={`px-4 py-2 text-center font-mono font-bold ${
+                                        standing.pointDifferential > 0
+                                          ? 'text-green-400'
+                                          : standing.pointDifferential < 0
+                                            ? 'text-red-400'
+                                            : 'text-white/50'
+                                      }`}
+                                    >
+                                      {standing.pointDifferential > 0 ? '+' : ''}
+                                      {standing.pointDifferential}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Matches */}
                         <div className="rounded-xl overflow-hidden border border-white/8 bg-[#0F1117]">
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">

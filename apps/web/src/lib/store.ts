@@ -53,6 +53,28 @@ export function updateMatch(
   return false
 }
 
+export function updatePool(
+  poolId: string,
+  updates: {
+    name?: string
+  }
+) {
+  const updated = JSON.parse(JSON.stringify(currentData))
+
+  for (const tournament of updated) {
+    for (const category of tournament.categories) {
+      const pool = category.pools.find((p: any) => p.id === poolId)
+      if (pool) {
+        if (updates.name !== undefined) pool.name = updates.name
+        currentData = updated
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
 export function reset() {
   currentData = JSON.parse(JSON.stringify(TOURNAMENTS))
 }
