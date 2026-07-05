@@ -16,6 +16,7 @@ export async function GET(request: Request) {
   try {
     // Get the environment (only available in Cloudflare Workers/Pages)
     const env = (request as any).cloudflare?.env as Env | undefined
+    console.log('[GET Scores] D1 database present?', Boolean(env?.DB))
 
     let tournaments
 

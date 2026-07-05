@@ -69,6 +69,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const env = (request as any).cloudflare?.env as Env | undefined
+    console.log('[Update Game] D1database present?', Boolean(env?.DB))
 
     if (env?.DB) {
       const game = await env.DB.prepare('SELECT match_id FROM games WHERE id = ?')
