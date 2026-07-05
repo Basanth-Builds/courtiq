@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { TournamentData, TournamentMatch, Pool } from '@/lib/tournament-data'
 import { calculatePoolStandings } from '@/lib/pool-standings'
-import { Trophy, LogOut, Check, AlertCircle, Edit2, MapPin, Clock, Plus } from 'lucide-react'
+import { Trophy, LogOut, Check, AlertCircle, Edit2, MapPin, Clock, Plus, Trash2 } from 'lucide-react'
 import { CourtManagement } from '@/components/admin/CourtManagement'
 import { BracketGenerator } from '@/components/admin/BracketGenerator'
 import { useTournamentData } from '@/hooks/useTournamentData'
@@ -38,6 +38,9 @@ export default function AdminPage() {
     team2: '',
     courtNumber: undefined as number | undefined,
   })
+
+  // Delete confirmation state
+  const [deletingMatch, setDeletingMatch] = useState<{ id: string; name: string } | null>(null)
 
   const handleLogout = async () => {
     try {
@@ -246,6 +249,28 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Create match failed:', error)
       showMessage('error', 'Failed to create match')
+    }
+  }
+
+  const handleDeleteMatch = async () => {
+    if (!deletingMatch) return
+
+    try {
+      const res = await fetch(`/api/scores/match/${deletingMatch.id}`, {
+        method: 'DELETE',
+      })
+
+      if (res.ok) {
+        showMessage('success', `Match deleted successfully`)
+        setDeletingMatch(null)
+        refresh()
+      } else {
+        const error = await res.json()
+        showMessage('error', error.error || 'Failed to delete match')
+      }
+    } catch (error) {
+      console.error('Delete match failed:', error)
+      showMessage('error', 'Failed to delete match')
     }
   }
 
@@ -628,6 +653,7 @@ export default function AdminPage() {
                                       onSaveTeam={handleSaveTeam}
                                       onCancelTeam={() => setEditingTeam(null)}
                                       onTeamNameChange={setTeamName}
+                                      onDelete={() => setDeletingMatch({ id: match.id, name: `${match.team1} vs ${match.team2}` })}
                                     />
                                   ))}
                                 </tbody>
@@ -669,6 +695,7 @@ export default function AdminPage() {
                                   onSave={() => handleSaveMatch(match.id)}
                                   onCancel={() => setEditingMatch(null)}
                                   onEditValuesChange={setEditValues}
+                                  onDelete={() => setDeletingMatch({ id: match.id, name: `${match.team1} vs ${match.team2}` })}
                                 />
                               ))}
                             </tbody>
@@ -685,6 +712,35 @@ export default function AdminPage() {
           </>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {deletingMatch && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1A1D2E] rounded-2xl border border-white/10 max-w-md w-full p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-2">Delete Match?</h3>
+            <p className="text-white/60 mb-4">
+              Are you sure you want to delete the match:<br />
+              <span className="font-semibold text-white">{deletingMatch.name}</span>?
+              <br /><br />
+              This will also delete all associated game data and cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingMatch(null)}
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteMatch}
+                className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+              >
+                Delete Match
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -704,6 +760,7 @@ function MatchRow({
   onSaveTeam,
   onCancelTeam,
   onTeamNameChange,
+  onDelete,
 }: {
   match: TournamentMatch
   isEditing: boolean
@@ -718,6 +775,7 @@ function MatchRow({
   onSaveTeam: () => void
   onCancelTeam: () => void
   onTeamNameChange: (name: string) => void
+  onDelete: () => void
 }) {
   const isEditingTeam1 = editingTeam?.matchId === match.id && editingTeam?.team === 'team1'
   const isEditingTeam2 = editingTeam?.matchId === match.id && editingTeam?.team === 'team2'
@@ -868,12 +926,20 @@ function MatchRow({
         <StatusBadge status={match.status} />
       </td>
       <td className="px-4 py-3 text-center">
-        <button
-          onClick={onEdit}
-          className="px-3 py-1 bg-[#A8D634]/20 text-[#A8D634] border border-[#A8D634]/30 rounded hover:bg-[#A8D634]/30 text-xs font-medium"
-        >
-          Edit
-        </button>
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={onEdit}
+            className="px-3 py-1 bg-[#A8D634]/20 text-[#A8D634] border border-[#A8D634]/30 rounded hover:bg-[#A8D634]/30 text-xs font-medium"
+          >
+            Edit
+          </button>
+          <button
+            onClick={onDelete}
+            className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 text-xs font-medium"
+          >
+            Delete
+          </button>
+        </div>
       </td>
     </tr>
   )
@@ -888,6 +954,7 @@ function PlayoffMatchRow({
   onSave,
   onCancel,
   onEditValuesChange,
+  onDelete,
 }: {
   match: TournamentMatch
   isEditing: boolean
@@ -896,6 +963,7 @@ function PlayoffMatchRow({
   onSave: () => void
   onCancel: () => void
   onEditValuesChange: (values: { team1Score: number; team2Score: number; status: string; courtNumber: number }) => void
+  onDelete: () => void
 }) {
   if (isEditing) {
     return (
@@ -967,12 +1035,20 @@ function PlayoffMatchRow({
         <StatusBadge status={match.status} />
       </td>
       <td className="px-4 py-3 text-center">
-        <button
-          onClick={onEdit}
-          className="px-3 py-1 bg-[#A8D634]/20 text-[#A8D634] border border-[#A8D634]/30 rounded hover:bg-[#A8D634]/30 text-xs font-medium"
-        >
-          Edit
-        </button>
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={onEdit}
+            className="px-3 py-1 bg-[#A8D634]/20 text-[#A8D634] border border-[#A8D634]/30 rounded hover:bg-[#A8D634]/30 text-xs font-medium"
+          >
+            Edit
+          </button>
+          <button
+            onClick={onDelete}
+            className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded hover:bg-red-500/30 text-xs font-medium"
+          >
+            Delete
+          </button>
+        </div>
       </td>
     </tr>
   )
