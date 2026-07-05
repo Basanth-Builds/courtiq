@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare'
 
 // Polyfill broken localStorage stub from --localstorage-file Node flag
 if (typeof globalThis !== 'undefined') {
@@ -10,6 +11,9 @@ if (typeof globalThis !== 'undefined') {
     }
   }
 }
+
+// Initialize OpenNext Cloudflare for local dev (enables getCloudflareContext in `next dev`)
+initOpenNextCloudflareForDev()
 
 const nextConfig: NextConfig = {
   // Keep firebase-admin, next-auth, and prisma server-side only — never bundled into client

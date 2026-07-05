@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get environment
-    const { env, isProduction } = getEnvironment(request)
+    const { env, isProduction } = await getEnvironment()
     logEnvironment('Create Match', isProduction)
 
     let newMatch

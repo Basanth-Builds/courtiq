@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing categoryId or poolName' }, { status: 400 })
     }
 
-    const { env, isProduction } = getEnvironment(req)
+    const { env, isProduction } = await getEnvironment()
     logEnvironment('Create Pool', isProduction)
 
     if (isProduction && env?.DB) {
@@ -77,7 +77,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Missing poolId' }, { status: 400 })
     }
 
-    const { env, isProduction } = getEnvironment(req)
+    const { env, isProduction } = await getEnvironment()
     logEnvironment('Delete Pool', isProduction)
 
     if (isProduction && env?.DB) {

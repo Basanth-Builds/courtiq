@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { env, isProduction } = getEnvironment(request)
+    const { env, isProduction } = await getEnvironment()
     logEnvironment('Update Team Name', isProduction)
     
     let success: boolean

@@ -5,16 +5,12 @@ import { getMatchWithGames as getMatchWithGamesFromD1 } from '@/lib/d1-store-enh
 import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
 import { cookies } from 'next/headers'
 
-interface Env {
-  DB?: D1Store.D1Database
-}
-
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const env = (request as any).cloudflare?.env as Env | undefined
+    const { env, isProduction } = await getEnvironment()
 
-    const match = env?.DB
+    const match = isProduction && env?.DB
       ? await getMatchWithGamesFromD1(env.DB, id)
       : getMatchWithGamesInMemory(id)
 
@@ -29,37 +25,34 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // Check authentication
     const cookieStore = await cookies()
     const adminCookie = cookieStore.get('ciq_admin')
-    
+
     if (!adminCookie) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { id: matchId } = await params
-    const { env, isProduction } = getEnvironment(request)
+    const { env, isProduction } = await getEnvironment()
     logEnvironment('DELETE Match', isProduction)
 
     let success: boolean
 
     if (isProduction && env?.DB) {
-      // Production: Delete from D1 database
       success = await D1Store.deleteMatch(env.DB, matchId)
-      
+
       if (!success) {
         console.error(`[DELETE Match] D1 delete failed for match ${matchId}`)
-        return NextResponse.json({ 
-          error: 'Database delete failed', 
-          details: 'Check server logs for D1 error' 
+        return NextResponse.json({
+          error: 'Database delete failed',
+          details: 'Check server logs for D1 error'
         }, { status: 500 })
       }
     } else {
-      // Development: Delete from in-memory store
       success = deleteMatchInMemory(matchId)
-      
+
       if (!success) {
         return NextResponse.json({ error: 'Match not found' }, { status: 404 })
       }

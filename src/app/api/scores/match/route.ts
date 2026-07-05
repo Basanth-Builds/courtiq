@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { env, isProduction } = getEnvironment(req)
+    const { env, isProduction } = await getEnvironment()
     logEnvironment('Update Match', isProduction)
 
     let success: boolean

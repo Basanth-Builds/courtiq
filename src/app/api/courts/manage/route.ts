@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { action, courtId, matchId, status } = body
     
-    const { env, isProduction } = getEnvironment(req)
+    const { env, isProduction } = await getEnvironment()
     logEnvironment('Court Management', isProduction)
 
     if (!isProduction || !env?.DB) {

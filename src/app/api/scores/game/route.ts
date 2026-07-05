@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { env, isProduction } = getEnvironment(request)
+    const { env, isProduction } = await getEnvironment()
     logEnvironment('Update Game', isProduction)
 
     if (isProduction && env?.DB) {
