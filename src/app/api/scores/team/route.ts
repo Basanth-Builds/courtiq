@@ -23,7 +23,10 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Get Cloudflare environment bindings
     const env = (request as any).cloudflare?.env as Env | undefined
+    console.log('[Update Team Name] D1 database present?', Boolean(env?.DB))
+    
     let success
 
     if (env?.DB) {

@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const env = (req as any).cloudflare?.env as Env | undefined
+    console.log('[Create Pool] D1 database present?', Boolean(env?.DB))
 
     if (env?.DB) {
       // Use D1 in production
@@ -89,6 +90,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     const env = (req as any).cloudflare?.env as Env | undefined
+    console.log('[Delete Pool] D1 database present?', Boolean(env?.DB))
 
     if (env?.DB) {
       // Check if pool has matches
