@@ -346,3 +346,34 @@ export async function addPool(
   }
 }
 
+/**
+ * Delete a match and its associated games from D1 database
+ */
+export async function deleteMatch(db: D1Database, matchId: string): Promise<boolean> {
+  try {
+    // Delete games first (foreign key constraint)
+    await db
+      .prepare('DELETE FROM games WHERE match_id = ?')
+      .bind(matchId)
+      .run()
+    
+    // Then delete the match
+    const deleteMatchResult = await db
+      .prepare('DELETE FROM matches WHERE id = ?')
+      .bind(matchId)
+      .run()
+    
+    // Check if match was actually deleted
+    if (!deleteMatchResult.success) {
+      console.error('[D1 deleteMatch] Failed to delete match')
+      return false
+    }
+    
+    console.log(`[D1 deleteMatch] Successfully deleted match ${matchId}`)
+    return true
+  } catch (error) {
+    console.error('[D1 deleteMatch] Error:', error)
+    return false
+  }
+}
+

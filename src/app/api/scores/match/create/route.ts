@@ -5,10 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import * as Store from '@/lib/store'
 import * as D1Store from '@/lib/d1-store'
-
-interface Env {
-  DB?: D1Store.D1Database
-}
+import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
 
 /**
  * POST /api/scores/match/create
@@ -53,13 +50,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get environment for D1 database
-    const env = (request as any).cloudflare?.env as Env | undefined
-    console.log('[Create Match] D1 database present?', Boolean(env?.DB))
+    // Get environment
+    const { env, isProduction } = getEnvironment(request)
+    logEnvironment('Create Match', isProduction)
 
     let newMatch
 
-    if (env?.DB) {
+    if (isProduction && env?.DB) {
       // Production: Use D1 database
       newMatch = await D1Store.createMatch(env.DB, poolId, {
         team1: team1.trim(),
@@ -67,6 +64,14 @@ export async function POST(request: NextRequest) {
         courtNumber,
         status: status || 'SCHEDULED',
       })
+      
+      if (!newMatch) {
+        console.error('[Create Match] D1 operation failed for pool', poolId)
+        return NextResponse.json(
+          { error: 'Database operation failed. Pool may not exist.' },
+          { status: 500 }
+        )
+      }
     } else {
       // Development: Use in-memory store
       newMatch = Store.createMatch(poolId, {
@@ -75,13 +80,13 @@ export async function POST(request: NextRequest) {
         courtNumber,
         status: status || 'SCHEDULED',
       })
-    }
-
-    if (!newMatch) {
-      return NextResponse.json(
-        { error: 'Failed to create match. Pool may not exist.' },
-        { status: 404 }
-      )
+      
+      if (!newMatch) {
+        return NextResponse.json(
+          { error: 'Failed to create match. Pool may not exist.' },
+          { status: 404 }
+        )
+      }
     }
 
     return NextResponse.json(
@@ -97,7 +102,7 @@ export async function POST(request: NextRequest) {
       }
     )
   } catch (error: any) {
-    console.error('Error creating match:', error)
+    console.error('[Create Match] Error:', error)
     return NextResponse.json(
       { error: error.message || 'Failed to create match' },
       { status: 500 }

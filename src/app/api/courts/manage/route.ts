@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminToken } from '@/lib/admin-auth'
 import { assignMatchToCourt, clearCourt, updateCourtStatus } from '@/lib/court-management'
-import type { D1Database } from '@/lib/d1-store'
-
-interface Env {
-  DB?: D1Database
-}
+import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get('ciq_admin')?.value ?? ''
@@ -17,10 +13,14 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { action, courtId, matchId, status } = body
-    const env = (req as any).cloudflare?.env as Env | undefined
+    
+    const { env, isProduction } = getEnvironment(req)
+    logEnvironment('Court Management', isProduction)
 
-    if (!env?.DB) {
-      return NextResponse.json({ error: 'Database not available in development' }, { status: 503 })
+    if (!isProduction || !env?.DB) {
+      return NextResponse.json({ 
+        error: 'Court management is only available in production' 
+      }, { status: 503 })
     }
 
     let success = false
@@ -48,12 +48,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (!success) {
-      return NextResponse.json({ error: 'Operation failed' }, { status: 500 })
+      console.error('[Court Management] Operation failed:', action, { courtId, matchId, status })
+      return NextResponse.json({ 
+        error: 'Database operation failed',
+        details: `Failed to ${action} court`
+      }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error in court management:', error)
+    console.error('[Court Management] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

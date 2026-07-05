@@ -507,6 +507,47 @@ export function addPool(categoryId: string, poolName: string) {
   return null
 }
 
+export function deleteMatch(matchId: string): boolean {
+  const updated = cloneData()
+  let found = false
+
+  for (const tournament of updated) {
+    for (const category of tournament.categories) {
+      // Check pool matches
+      for (const pool of category.pools) {
+        const index = pool.matches.findIndex((m: any) => m.id === matchId)
+        if (index !== -1) {
+          pool.matches.splice(index, 1)
+          found = true
+          break
+        }
+      }
+      
+      // Check playoff matches
+      if (!found) {
+        const index = category.playoffMatches.findIndex((m: any) => m.id === matchId)
+        if (index !== -1) {
+          category.playoffMatches.splice(index, 1)
+          found = true
+          break
+        }
+      }
+      
+      if (found) break
+    }
+    if (found) break
+  }
+
+  if (found) {
+    currentData = updated
+    // Also delete associated games
+    currentGames = currentGames.filter((g: any) => g.matchId !== matchId)
+    touch()
+  }
+
+  return found
+}
+
 export function reset() {
   currentData = JSON.parse(JSON.stringify(TOURNAMENTS))
   currentGames = buildInitialGames(currentData)
