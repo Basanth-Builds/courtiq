@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminToken } from '@/lib/admin-auth'
-import * as D1Store from '@/lib/d1-store'
-import * as D1EnhancedStore from '@/lib/d1-store-enhanced'
+import * as SupabaseStore from '@/lib/supabase-store'
 import {
   completeGame as completeGameInMemory,
   getMatchWithGames as getMatchWithGamesInMemory,
   updateGameScore as updateGameScoreInMemory,
 } from '@/lib/store'
-import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
+import { createServerSupabaseAdminClient } from '@/lib/supabase/server'
 
 interface RequestBody {
   gameId?: string
+  matchId?: string
   team1Score?: number
   team2Score?: number
   complete?: boolean
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { gameId, team1Score, team2Score, complete, winner } = body
+  const { gameId, matchId, team1Score, team2Score, complete, winner } = body
 
   if (!gameId) {
     return NextResponse.json({ error: 'gameId is required' }, { status: 400 })
@@ -65,46 +65,45 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { env, isProduction } = await getEnvironment()
-    logEnvironment('Update Game', isProduction)
-
-    if (isProduction && env?.DB) {
-      const game = await env.DB.prepare('SELECT match_id FROM games WHERE id = ?')
-        .bind(gameId)
-        .first<{ match_id: string }>()
-
-      if (!game) {
-        return NextResponse.json({ error: 'Game not found' }, { status: 404 })
-      }
+    // Try Supabase first (production)
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      const supabase = await createServerSupabaseAdminClient()
 
       if (hasScoreUpdate) {
-        const success = await D1EnhancedStore.updateGameScore(
-          env.DB,
+        const success = await SupabaseStore.updateGameScore(
+          supabase,
           gameId,
           team1Score!,
           team2Score!
         )
         if (!success) {
-          console.error('[Update Game] D1 score update failed for game', gameId)
-          return NextResponse.json({ 
-            error: 'Database operation failed',
-            details: 'Failed to update game score'
-          }, { status: 500 })
+          console.error('[Update Game] Supabase score update failed for game', gameId)
+          return NextResponse.json(
+            {
+              error: 'Database operation failed',
+              details: 'Failed to update game score',
+            },
+            { status: 500 }
+          )
         }
       }
 
       if (complete) {
-        const success = await D1EnhancedStore.completeGame(env.DB, gameId, winner!)
+        const success = await SupabaseStore.completeGame(supabase, gameId, winner!)
         if (!success) {
-          console.error('[Update Game] D1 game completion failed for game', gameId)
-          return NextResponse.json({ 
-            error: 'Database operation failed',
-            details: 'Failed to complete game'
-          }, { status: 500 })
+          console.error('[Update Game] Supabase game completion failed for game', gameId)
+          return NextResponse.json(
+            {
+              error: 'Database operation failed',
+              details: 'Failed to complete game',
+            },
+            { status: 500 }
+          )
         }
       }
 
-      const match = await D1EnhancedStore.getMatchWithGames(env.DB, game.match_id)
+      // Get the updated match
+      const match = matchId ? await SupabaseStore.getMatchWithGames(supabase, matchId) : null
       return NextResponse.json(
         { success: true, match },
         { headers: { 'Cache-Control': 'no-store' } }
@@ -112,14 +111,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Development: Use in-memory store
-    const existingMatch = getMatchWithGamesInMemory(gameId.replace(/-game-\d+$/, ''))
-    if (!existingMatch) {
-      const directGameOwner = getMatchOwnerFromMemory(gameId)
-      if (!directGameOwner) {
-        return NextResponse.json({ error: 'Game not found' }, { status: 404 })
-      }
-    }
-
     if (hasScoreUpdate) {
       const success = updateGameScoreInMemory(gameId, team1Score!, team2Score!)
       if (!success) {
@@ -134,12 +125,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const matchId = getMatchOwnerFromMemory(gameId)
-    if (!matchId) {
+    const matchIdFromMemory = getMatchOwnerFromMemory(gameId)
+    if (!matchIdFromMemory) {
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const match = getMatchWithGamesInMemory(matchId)
+    const match = getMatchWithGamesInMemory(matchIdFromMemory)
     return NextResponse.json({ success: true, match }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     console.error('[Update Game] Error:', error)

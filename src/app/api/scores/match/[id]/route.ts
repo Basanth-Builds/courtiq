@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server'
-import * as D1Store from '@/lib/d1-store'
+import * as SupabaseStore from '@/lib/supabase-store'
 import { getMatchWithGames as getMatchWithGamesInMemory, deleteMatch as deleteMatchInMemory } from '@/lib/store'
-import { getMatchWithGames as getMatchWithGamesFromD1 } from '@/lib/d1-store-enhanced'
-import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
+import { createServerSupabaseAdminClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
-    const { env, isProduction } = await getEnvironment()
 
-    const match = isProduction && env?.DB
-      ? await getMatchWithGamesFromD1(env.DB, id)
-      : getMatchWithGamesInMemory(id)
+    let match
+
+    // Try Supabase first (production)
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      const supabase = await createServerSupabaseAdminClient()
+      match = await SupabaseStore.getMatchWithGames(supabase, id)
+    } else {
+      match = getMatchWithGamesInMemory(id)
+    }
 
     if (!match) {
       return NextResponse.json({ error: 'Match not found' }, { status: 404 })
@@ -35,20 +39,23 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     }
 
     const { id: matchId } = await params
-    const { env, isProduction } = await getEnvironment()
-    logEnvironment('DELETE Match', isProduction)
 
     let success: boolean
 
-    if (isProduction && env?.DB) {
-      success = await D1Store.deleteMatch(env.DB, matchId)
+    // Try Supabase first (production)
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      const supabase = await createServerSupabaseAdminClient()
+      success = await SupabaseStore.deleteMatch(supabase, matchId)
 
       if (!success) {
-        console.error(`[DELETE Match] D1 delete failed for match ${matchId}`)
-        return NextResponse.json({
-          error: 'Database delete failed',
-          details: 'Check server logs for D1 error'
-        }, { status: 500 })
+        console.error(`[DELETE Match] Supabase delete failed for match ${matchId}`)
+        return NextResponse.json(
+          {
+            error: 'Database delete failed',
+            details: 'Check server logs for Supabase error',
+          },
+          { status: 500 }
+        )
       }
     } else {
       success = deleteMatchInMemory(matchId)
