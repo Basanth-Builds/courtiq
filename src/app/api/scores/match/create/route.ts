@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Get environment for D1 database
     const env = (request as any).cloudflare?.env as Env | undefined
+    console.log('[Create Match] D1 database present?', Boolean(env?.DB))
 
     let newMatch
 

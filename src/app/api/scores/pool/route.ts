@@ -24,7 +24,10 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const env = (req as any).env as Env | undefined
+    // Get Cloudflare environment bindings
+    const env = (req as any).cloudflare?.env as Env | undefined
+    console.log('[Pool Update] D1 database present?', Boolean(env?.DB))
+    
     let success
 
     if (env?.DB) {
