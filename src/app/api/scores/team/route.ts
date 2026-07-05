@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers'
 import { updateTeamName } from '@/lib/store'
-import * as D1Store from '@/lib/d1-store'
+import * as SupabaseStore from '@/lib/supabase-store'
 import { verifyAdminToken } from '@/lib/admin-auth'
-import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
+import { createServerSupabaseAdminClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   // Verify admin authentication
@@ -19,24 +19,28 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { env, isProduction } = getEnvironment(request)
-    logEnvironment('Update Team Name', isProduction)
-    
     let success: boolean
 
-    if (isProduction && env?.DB) {
-      success = await D1Store.updateTeamName(env.DB, matchId, team, newName)
-      
+    // Try Supabase first (production)
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      const supabase = await createServerSupabaseAdminClient()
+      const teamNumber = team === 'team1' ? 1 : 2
+
+      success = await SupabaseStore.updateTeamName(supabase, matchId, teamNumber, newName)
+
       if (!success) {
-        console.error('[Update Team Name] D1 write failed for match', matchId)
-        return Response.json({ 
-          error: 'Database update failed',
-          details: 'D1 write operation returned false'
-        }, { status: 500 })
+        console.error('[Update Team Name] Supabase write failed for match', matchId)
+        return Response.json(
+          {
+            error: 'Database update failed',
+            details: 'Supabase write operation returned false',
+          },
+          { status: 500 }
+        )
       }
     } else {
       success = updateTeamName(matchId, team, newName)
-      
+
       if (!success) {
         return Response.json({ error: 'Match not found' }, { status: 404 })
       }

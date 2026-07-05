@@ -1,3 +1,4 @@
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 import { D1Database } from '@/lib/d1-store'
 
 /**
@@ -8,21 +9,24 @@ export interface CloudflareEnv {
 }
 
 /**
- * Determine if we're running in production (Cloudflare with D1)
- * or development/test (in-memory store)
+ * Get Cloudflare environment bindings using the OpenNext adapter's recommended API.
+ * 
+ * Uses getCloudflareContext({async: true}) which works in every route handler.
+ * Falls back gracefully in local dev (next dev) when no Cloudflare context exists.
  */
-export function getEnvironment(request: Request): { 
+export async function getEnvironment(): Promise<{
   env: CloudflareEnv | undefined
-  isProduction: boolean 
-} {
-  // OpenNext/Cloudflare provides bindings through request.cloudflare.env
-  const env = (request as any).cloudflare?.env as CloudflareEnv | undefined
-  
-  // Production = D1 binding exists
-  // Development/Test = No D1 binding (use in-memory store)
-  const isProduction = Boolean(env?.DB)
-  
-  return { env, isProduction }
+  isProduction: boolean
+}> {
+  try {
+    const { env } = await getCloudflareContext({ async: true })
+    const cfEnv = env as CloudflareEnv | undefined
+    const isProduction = Boolean(cfEnv?.DB)
+    return { env: cfEnv, isProduction }
+  } catch {
+    // Not running inside a Cloudflare Worker (local `next dev`)
+    return { env: undefined, isProduction: false }
+  }
 }
 
 /**

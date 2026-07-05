@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { updateMatch } from '@/lib/store'
-import * as D1Store from '@/lib/d1-store'
+import * as SupabaseStore from '@/lib/supabase-store'
 import { verifyAdminToken } from '@/lib/admin-auth'
-import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
+import { createServerSupabaseAdminClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
   // Verify admin authentication via cookie
@@ -20,26 +20,37 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { env, isProduction } = getEnvironment(req)
-    logEnvironment('Update Match', isProduction)
-
     let success: boolean
 
-    if (isProduction && env?.DB) {
-      // Production: Use D1 database
-      success = await D1Store.updateMatch(env.DB, matchId, updates)
+    // Try Supabase first (production)
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      const supabase = await createServerSupabaseAdminClient()
       
+      if (updates.score) {
+        success = await SupabaseStore.updateMatch(
+          supabase,
+          matchId,
+          updates.score.team1,
+          updates.score.team2
+        )
+      } else {
+        success = true
+      }
+
       if (!success) {
-        console.error('[Update Match] D1 write failed for match', matchId)
-        return NextResponse.json({ 
-          error: 'Database update failed',
-          details: 'D1 write operation returned false'
-        }, { status: 500 })
+        console.error('[Update Match] Supabase write failed for match', matchId)
+        return NextResponse.json(
+          {
+            error: 'Database update failed',
+            details: 'Supabase write operation returned false',
+          },
+          { status: 500 }
+        )
       }
     } else {
       // Development: Use in-memory store
       success = updateMatch(matchId, updates)
-      
+
       if (!success) {
         return NextResponse.json({ error: 'Match not found' }, { status: 404 })
       }

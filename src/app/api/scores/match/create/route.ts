@@ -4,8 +4,8 @@ export const revalidate = 0
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import * as Store from '@/lib/store'
-import * as D1Store from '@/lib/d1-store'
-import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
+import * as SupabaseStore from '@/lib/supabase-store'
+import { createServerSupabaseAdminClient } from '@/lib/supabase/server'
 
 /**
  * POST /api/scores/match/create
@@ -50,23 +50,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get environment
-    const { env, isProduction } = getEnvironment(request)
-    logEnvironment('Create Match', isProduction)
-
     let newMatch
 
-    if (isProduction && env?.DB) {
-      // Production: Use D1 database
-      newMatch = await D1Store.createMatch(env.DB, poolId, {
+    // Try Supabase first (production)
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      const supabase = await createServerSupabaseAdminClient()
+      
+      newMatch = await SupabaseStore.createMatch(supabase, poolId, {
         team1: team1.trim(),
         team2: team2.trim(),
         courtNumber,
         status: status || 'SCHEDULED',
       })
-      
+
       if (!newMatch) {
-        console.error('[Create Match] D1 operation failed for pool', poolId)
+        console.error('[Create Match] Supabase operation failed for pool', poolId)
         return NextResponse.json(
           { error: 'Database operation failed. Pool may not exist.' },
           { status: 500 }
@@ -80,7 +78,7 @@ export async function POST(request: NextRequest) {
         courtNumber,
         status: status || 'SCHEDULED',
       })
-      
+
       if (!newMatch) {
         return NextResponse.json(
           { error: 'Failed to create match. Pool may not exist.' },
