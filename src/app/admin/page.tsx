@@ -41,6 +41,7 @@ export default function AdminPage() {
 
   // Delete confirmation state
   const [deletingMatch, setDeletingMatch] = useState<{ id: string; name: string } | null>(null)
+  const [deletingTeam, setDeletingTeam] = useState<{ matchId: string; team: 'team1' | 'team2'; teamName: string; opponentName: string } | null>(null)
 
   const handleLogout = async () => {
     try {
@@ -271,6 +272,28 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Delete match failed:', error)
       showMessage('error', 'Failed to delete match')
+    }
+  }
+  
+  const handleDeleteTeam = async () => {
+    if (!deletingTeam) return
+
+    try {
+      const res = await fetch(`/api/scores/match/${deletingTeam.matchId}`, {
+        method: 'DELETE',
+      })
+
+      if (res.ok) {
+        showMessage('success', `Team and match deleted successfully`)
+        setDeletingTeam(null)
+        refresh()
+      } else {
+        const error = await res.json()
+        showMessage('error', error.error || 'Failed to delete team')
+      }
+    } catch (error) {
+      console.error('Delete team failed:', error)
+      showMessage('error', 'Failed to delete team')
     }
   }
 
@@ -654,6 +677,12 @@ export default function AdminPage() {
                                       onCancelTeam={() => setEditingTeam(null)}
                                       onTeamNameChange={setTeamName}
                                       onDelete={() => setDeletingMatch({ id: match.id, name: `${match.team1} vs ${match.team2}` })}
+                                      onDeleteTeam={(team: 'team1' | 'team2') => setDeletingTeam({ 
+                                        matchId: match.id, 
+                                        team, 
+                                        teamName: team === 'team1' ? match.team1 : match.team2,
+                                        opponentName: team === 'team1' ? match.team2 : match.team1
+                                      })}
                                     />
                                   ))}
                                 </tbody>
@@ -741,6 +770,41 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* Delete Team Confirmation Modal */}
+      {deletingTeam && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1A1D2E] rounded-2xl border border-white/10 max-w-md w-full p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              Delete Team?
+            </h3>
+            <p className="text-white/60 mb-4">
+              You are about to delete team:<br />
+              <span className="font-semibold text-white">{deletingTeam.teamName}</span>
+              <br /><br />
+              ⚠️ <strong className="text-orange-400">Warning:</strong> Deleting a team will delete the <strong>entire match</strong>:<br />
+              <span className="font-semibold text-white">{deletingTeam.teamName} vs {deletingTeam.opponentName}</span>
+              <br /><br />
+              This will also delete all associated game data and cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeletingTeam(null)}
+                className="flex-1 px-4 py-2 bg-white/10 hover:bg-white/15 text-white rounded-lg font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteTeam}
+                className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
+              >
+                Delete Team & Match
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -761,6 +825,7 @@ function MatchRow({
   onCancelTeam,
   onTeamNameChange,
   onDelete,
+  onDeleteTeam,
 }: {
   match: TournamentMatch
   isEditing: boolean
@@ -776,6 +841,7 @@ function MatchRow({
   onCancelTeam: () => void
   onTeamNameChange: (name: string) => void
   onDelete: () => void
+  onDeleteTeam: (team: 'team1' | 'team2') => void
 }) {
   const isEditingTeam1 = editingTeam?.matchId === match.id && editingTeam?.team === 'team1'
   const isEditingTeam2 = editingTeam?.matchId === match.id && editingTeam?.team === 'team2'
@@ -877,6 +943,13 @@ function MatchRow({
             >
               <Edit2 className="w-3 h-3" />
             </button>
+            <button
+              onClick={() => onDeleteTeam('team1')}
+              className="opacity-0 group-hover:opacity-100 px-1.5 py-0.5 bg-red-500/10 hover:bg-red-500/20 rounded text-xs text-red-400"
+              title="Delete this team (deletes entire match)"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
           </div>
         )}
       </td>
@@ -912,6 +985,13 @@ function MatchRow({
               title="Edit team name"
             >
               <Edit2 className="w-3 h-3" />
+            </button>
+            <button
+              onClick={() => onDeleteTeam('team2')}
+              className="opacity-0 group-hover:opacity-100 px-1.5 py-0.5 bg-red-500/10 hover:bg-red-500/20 rounded text-xs text-red-400"
+              title="Delete this team (deletes entire match)"
+            >
+              <Trash2 className="w-3 h-3" />
             </button>
           </div>
         )}

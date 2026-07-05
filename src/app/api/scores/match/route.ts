@@ -2,12 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { updateMatch } from '@/lib/store'
 import * as D1Store from '@/lib/d1-store'
 import { verifyAdminToken } from '@/lib/admin-auth'
-
-
-// Type for the environment bindings
-interface Env {
-  DB?: D1Store.D1Database
-}
+import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
 
 export async function POST(req: NextRequest) {
   // Verify admin authentication via cookie
@@ -25,27 +20,34 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Get the environment (only available in Cloudflare Workers/Pages)
-    const env = (req as any).cloudflare?.env as Env | undefined
-    console.log('[Update Match] D1 database present?', Boolean(env?.DB))
+    const { env, isProduction } = getEnvironment(req)
+    logEnvironment('Update Match', isProduction)
 
-    let success
+    let success: boolean
 
-    if (env?.DB) {
+    if (isProduction && env?.DB) {
       // Production: Use D1 database
       success = await D1Store.updateMatch(env.DB, matchId, updates)
+      
+      if (!success) {
+        console.error('[Update Match] D1 write failed for match', matchId)
+        return NextResponse.json({ 
+          error: 'Database update failed',
+          details: 'D1 write operation returned false'
+        }, { status: 500 })
+      }
     } else {
       // Development: Use in-memory store
       success = updateMatch(matchId, updates)
-    }
-
-    if (!success) {
-      return NextResponse.json({ error: 'Match not found' }, { status: 404 })
+      
+      if (!success) {
+        return NextResponse.json({ error: 'Match not found' }, { status: 404 })
+      }
     }
 
     return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
-    console.error('Error updating match:', error)
+    console.error('[Update Match] Error:', error)
     return NextResponse.json({ error: 'Failed to update match' }, { status: 500 })
   }
 }

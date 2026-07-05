@@ -7,10 +7,7 @@ import {
   getMatchWithGames as getMatchWithGamesInMemory,
   updateGameScore as updateGameScoreInMemory,
 } from '@/lib/store'
-
-interface Env {
-  DB?: D1Store.D1Database
-}
+import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
 
 interface RequestBody {
   gameId?: string
@@ -68,10 +65,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const env = (request as any).cloudflare?.env as Env | undefined
-    console.log('[Update Game] D1database present?', Boolean(env?.DB))
+    const { env, isProduction } = getEnvironment(request)
+    logEnvironment('Update Game', isProduction)
 
-    if (env?.DB) {
+    if (isProduction && env?.DB) {
       const game = await env.DB.prepare('SELECT match_id FROM games WHERE id = ?')
         .bind(gameId)
         .first<{ match_id: string }>()
@@ -88,14 +85,22 @@ export async function POST(request: NextRequest) {
           team2Score!
         )
         if (!success) {
-          return NextResponse.json({ error: 'Failed to update game score' }, { status: 500 })
+          console.error('[Update Game] D1 score update failed for game', gameId)
+          return NextResponse.json({ 
+            error: 'Database operation failed',
+            details: 'Failed to update game score'
+          }, { status: 500 })
         }
       }
 
       if (complete) {
         const success = await D1EnhancedStore.completeGame(env.DB, gameId, winner!)
         if (!success) {
-          return NextResponse.json({ error: 'Failed to complete game' }, { status: 500 })
+          console.error('[Update Game] D1 game completion failed for game', gameId)
+          return NextResponse.json({ 
+            error: 'Database operation failed',
+            details: 'Failed to complete game'
+          }, { status: 500 })
         }
       }
 
@@ -106,6 +111,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Development: Use in-memory store
     const existingMatch = getMatchWithGamesInMemory(gameId.replace(/-game-\d+$/, ''))
     if (!existingMatch) {
       const directGameOwner = getMatchOwnerFromMemory(gameId)
@@ -136,7 +142,7 @@ export async function POST(request: NextRequest) {
     const match = getMatchWithGamesInMemory(matchId)
     return NextResponse.json({ success: true, match }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
-    console.error('Error updating game score:', error)
+    console.error('[Update Game] Error:', error)
     return NextResponse.json({ error: 'Failed to update game score' }, { status: 500 })
   }
 }

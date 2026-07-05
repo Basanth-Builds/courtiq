@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdminToken, ADMIN_COOKIE } from '@/lib/admin-auth'
-import type { D1Database } from '@/lib/d1-store'
-
-interface Env {
-  DB?: D1Database
-}
+import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
+import * as D1Store from '@/lib/d1-store'
+import { addPool } from '@/lib/store'
 
 // Create a new pool
 export async function POST(req: NextRequest) {
@@ -23,51 +21,41 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing categoryId or poolName' }, { status: 400 })
     }
 
-    const env = (req as any).cloudflare?.env as Env | undefined
-    console.log('[Create Pool] D1 database present?', Boolean(env?.DB))
+    const { env, isProduction } = getEnvironment(req)
+    logEnvironment('Create Pool', isProduction)
 
-    if (env?.DB) {
-      // Use D1 in production
-      const poolId = `pool_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-
-      await env.DB
-        .prepare('INSERT INTO pools (id, category_id, name) VALUES (?, ?, ?)')
-        .bind(poolId, categoryId, poolName)
-        .run()
+    if (isProduction && env?.DB) {
+      // Production: Use D1 database
+      const pool = await D1Store.addPool(env.DB, categoryId, poolName)
+      
+      if (!pool) {
+        console.error('[Create Pool] D1 operation failed for category', categoryId)
+        return NextResponse.json({ 
+          error: 'Database operation failed',
+          details: 'Category may not exist'
+        }, { status: 500 })
+      }
 
       return NextResponse.json({
         success: true,
-        pool: { id: poolId, categoryId, name: poolName }
+        pool: pool
       })
     }
 
-    // In-memory store for development
-    const { getTournamentStore } = await import('@/lib/store')
-    const store = getTournamentStore()
-
-    // Find the category
-    for (const tournament of store) {
-      const category = tournament.categories.find(c => c.id === categoryId)
-      if (category) {
-        const newPool = {
-          id: `pool_${Date.now()}`,
-          categoryId: category.id,
-          name: poolName,
-          matches: []
-        }
-        category.pools.push(newPool)
-
-        return NextResponse.json({
-          success: true,
-          pool: newPool
-        })
-      }
+    // Development: Use in-memory store
+    const pool = addPool(categoryId, poolName)
+    
+    if (!pool) {
+      return NextResponse.json({ error: 'Category not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ error: 'Category not found' }, { status: 404 })
+    return NextResponse.json({
+      success: true,
+      pool: pool
+    })
 
   } catch (error) {
-    console.error('Error adding pool:', error)
+    console.error('[Create Pool] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -89,10 +77,10 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Missing poolId' }, { status: 400 })
     }
 
-    const env = (req as any).cloudflare?.env as Env | undefined
-    console.log('[Delete Pool] D1 database present?', Boolean(env?.DB))
+    const { env, isProduction } = getEnvironment(req)
+    logEnvironment('Delete Pool', isProduction)
 
-    if (env?.DB) {
+    if (isProduction && env?.DB) {
       // Check if pool has matches
       const matches = await env.DB
         .prepare('SELECT COUNT(*) as count FROM matches WHERE pool_id = ?')
@@ -106,15 +94,22 @@ export async function DELETE(req: NextRequest) {
       }
 
       // Delete the pool
-      await env.DB
+      const result = await env.DB
         .prepare('DELETE FROM pools WHERE id = ?')
         .bind(poolId)
         .run()
+        
+      if (!result.success) {
+        console.error('[Delete Pool] D1 delete failed for pool', poolId)
+        return NextResponse.json({ 
+          error: 'Database operation failed'
+        }, { status: 500 })
+      }
 
       return NextResponse.json({ success: true })
     }
 
-    // In-memory store for development
+    // Development: Use in-memory store
     const { getTournamentStore } = await import('@/lib/store')
     const store = getTournamentStore()
 
@@ -136,7 +131,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
 
   } catch (error) {
-    console.error('Error deleting pool:', error)
+    console.error('[Delete Pool] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

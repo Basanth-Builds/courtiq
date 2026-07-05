@@ -2,11 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { updatePool } from '@/lib/store'
 import * as D1Store from '@/lib/d1-store'
 import { verifyAdminToken } from '@/lib/admin-auth'
-
-
-interface Env {
-  DB?: D1Store.D1Database
-}
+import { getEnvironment, logEnvironment } from '@/lib/cloudflare-env'
 
 export async function POST(req: NextRequest) {
   // Verify admin authentication via cookie
@@ -24,25 +20,32 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Get Cloudflare environment bindings
-    const env = (req as any).cloudflare?.env as Env | undefined
-    console.log('[Pool Update] D1 database present?', Boolean(env?.DB))
+    const { env, isProduction } = getEnvironment(req)
+    logEnvironment('Pool Update', isProduction)
     
-    let success
+    let success: boolean
 
-    if (env?.DB) {
+    if (isProduction && env?.DB) {
       success = await D1Store.updatePool(env.DB, poolId, updates)
+      
+      if (!success) {
+        console.error('[Pool Update] D1 write failed for pool', poolId)
+        return NextResponse.json({ 
+          error: 'Database update failed',
+          details: 'D1 write operation returned false'
+        }, { status: 500 })
+      }
     } else {
       success = updatePool(poolId, updates)
-    }
-
-    if (!success) {
-      return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
+      
+      if (!success) {
+        return NextResponse.json({ error: 'Pool not found' }, { status: 404 })
+      }
     }
 
     return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
-    console.error('Error updating pool:', error)
+    console.error('[Pool Update] Error:', error)
     return NextResponse.json({ error: 'Failed to update pool' }, { status: 500 })
   }
 }
